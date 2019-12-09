@@ -8,6 +8,7 @@ pub fn env_arg<'a>() -> Arg<'a, 'a> {
         .takes_value(true)
         .required(true)
         .possible_values(&["local", "cloudtest", "cloudtest2", "prod"])
+        .env("NEBOCLI_ENV")
 }
 
 pub fn login_arg<'a>()-> Arg<'a, 'a> {
@@ -17,4 +18,5 @@ pub fn login_arg<'a>()-> Arg<'a, 'a> {
         .help("the login")
         .takes_value(true)
         .required(true)
+        .env("NEBOCLI_LOGIN")
 }
