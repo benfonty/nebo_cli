@@ -9,7 +9,7 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/nebo_cli.exe",
-            "args": ["token", "--env", "local", "--login", "test1@myscript.com"],
+            "args": ["token", "--env", "prod", "--login", "test1@myscript.com"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

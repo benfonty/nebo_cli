@@ -1,8 +1,12 @@
+#[macro_use]
+extern crate lazy_static;
+extern crate futures;
 use std::error::Error;
 
 use clap::{App};
 mod token;
 mod args;
+mod common;
 
 fn main() -> Result<(), Box<dyn Error>>{
     let cmd = App::new("nebo_cli")
@@ -19,8 +23,7 @@ fn main() -> Result<(), Box<dyn Error>>{
     
     match cmd.subcommand() {
         ("token", args) => {
-            token::token(args.unwrap());
-            Ok(())
+            token::token(args.unwrap())
         },
         _ => Err(Box::from("no match"))
     }   
