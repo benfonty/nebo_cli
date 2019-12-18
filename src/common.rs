@@ -16,8 +16,8 @@ lazy_static! {
         });
         m.insert("prod",&Env  {
             sso_url: "https://sso.myscript.com",
-            client_id: "toto",
-            sso_redirect_uri: "http://localhost:8080"
+            client_id: "nebo.app",
+            sso_redirect_uri: "http://localhost:8080/callback"
         });
         m
     };

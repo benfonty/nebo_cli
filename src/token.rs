@@ -21,6 +21,7 @@ pub fn token(arg: &ArgMatches) -> Result<(), Box<dyn Error>> {
     
     first_call(&client, env, sso_url)?;
     let location = second_call(&client, sso_url, login)?;
+    println!("location = {}", location);
     Ok(())
 } 
 
@@ -40,7 +41,7 @@ fn first_call(client: &Client, env: &str, sso_url: &str) -> Result<(), Box<dyn E
     Ok(())
 }
 
-fn second_call<'a>(client: &Client, sso_url: &str, login: &str)-> Result<(&'a str), Box<dyn Error>> {
+fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<(String), Box<dyn Error>> {
     let password = PasswordInput::new().with_prompt("password").interact()?;
     let response = client
         .post(format!("{}/public/customlogin",sso_url).as_str())
@@ -49,10 +50,12 @@ fn second_call<'a>(client: &Client, sso_url: &str, login: &str)-> Result<(&'a st
     if response.status() != 302 {
         return Err(Box::from("wrong answer from first call"))
     }
-    response
-        .headers()
+    
+    let resp = response.headers()
         .get("location")
-        .ok_or ("aie")
-        .map(|s| s.to_str())
+        .ok_or("Second call: No location found in header")?
+        .to_str()
+        .unwrap();
+    Ok(resp.to_string())
 }
 
