@@ -5,6 +5,7 @@ use reqwest::Client;
 
 use std::error::Error;
 use dialoguer::PasswordInput;
+use std::env;
 
 use super::common;
 
@@ -41,8 +42,12 @@ fn first_call(client: &Client, env: &str, sso_url: &str) -> Result<(), Box<dyn E
     Ok(())
 }
 
+fn get_password() -> Result<(String), std::io::Error> {
+    env::var("NEBOCLI_PASSWORD").or_else(|_| PasswordInput::new().with_prompt("password").interact())
+}
+
 fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<(String), Box<dyn Error>> {
-    let password = PasswordInput::new().with_prompt("password").interact()?;
+    let password = get_password()?;
     let response = client
         .post(format!("{}/public/customlogin",sso_url).as_str())
         .form(&[("email", login), ("password", password.as_str())])
