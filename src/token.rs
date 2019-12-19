@@ -53,7 +53,7 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<(String), B
         .form(&[("email", login), ("password", password.as_str())])
         .send()?;
     if response.status() != 302 {
-        return Err(Box::from("wrong answer from first call"))
+        return Err(Box::from("wrong answer from second call"))
     }
     
     Ok(response.headers()
