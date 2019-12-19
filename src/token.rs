@@ -56,11 +56,11 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<(String), B
         return Err(Box::from("wrong answer from first call"))
     }
     
-    let resp = response.headers()
+    Ok(response.headers()
         .get("location")
         .ok_or("Second call: No location found in header")?
         .to_str()
-        .unwrap();
-    Ok(resp.to_string())
+        .unwrap()
+        .to_string())
 }
 
