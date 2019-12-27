@@ -1,4 +1,3 @@
-use clap::ArgMatches;
 use reqwest;
 use reqwest::RedirectPolicy;
 use reqwest::Client;
@@ -9,15 +8,13 @@ use std::env;
 
 use super::common;
 
-pub fn token(arg: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    println!("calling token subcommand with env={} and login={}", arg.value_of("env").unwrap(), arg.value_of("login").unwrap());
+pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
+    println!("calling token subcommand with env={} and login={}", env, login);
 
     let client = reqwest::ClientBuilder::new()
         .redirect(RedirectPolicy::none())
         .build()?;
     
-    let env = arg.value_of("env").unwrap();
-    let login = arg.value_of("login").unwrap();
     let sso_url = common::ENV[env].sso_url;    
     
     first_call(&client, env, sso_url)?;

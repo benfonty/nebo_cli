@@ -1,12 +1,9 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate futures;
 use std::error::Error;
 
 use clap::{App};
-mod token;
+use ::nebo_cli;
 mod args;
-mod common;
+
 
 fn main() -> Result<(), Box<dyn Error>>{
     let cmd = App::new("nebo_cli")
@@ -23,7 +20,8 @@ fn main() -> Result<(), Box<dyn Error>>{
     
     match cmd.subcommand() {
         ("token", args) => {
-            token::token(args.unwrap())
+            let unwrapped_args = args.unwrap();
+            nebo_cli::token(unwrapped_args.value_of("env").unwrap(), unwrapped_args.value_of("login").unwrap())
         },
         _ => Err(Box::from("no match"))
     }   
