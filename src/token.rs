@@ -5,6 +5,7 @@ use reqwest::Client;
 use std::error::Error;
 use dialoguer::PasswordInput;
 use std::env;
+use url::{Url, ParseError};
 
 use super::common;
 
@@ -13,6 +14,7 @@ pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
 
     let client = reqwest::ClientBuilder::new()
         .redirect(RedirectPolicy::none())
+        .cookie_store(true)
         .build()?;
     
     let sso_url = common::ENV[env].sso_url;    
@@ -20,6 +22,7 @@ pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
     first_call(&client, env, sso_url)?;
     let location = second_call(&client, sso_url, login)?;
     println!("location = {}", location);
+    third_call(&client, sso_url, location.as_str(), env)?;
     Ok(())
 } 
 
@@ -39,11 +42,11 @@ fn first_call(client: &Client, env: &str, sso_url: &str) -> Result<(), Box<dyn E
     Ok(())
 }
 
-fn get_password() -> Result<(String), std::io::Error> {
+fn get_password() -> Result<String, std::io::Error> {
     env::var("NEBOCLI_PASSWORD").or_else(|_| PasswordInput::new().with_prompt("password").interact())
 }
 
-fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<(String), Box<dyn Error>> {
+fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<String, Box<dyn Error>> {
     let password = get_password()?;
     let response = client
         .post(format!("{}/public/customlogin",sso_url).as_str())
@@ -51,6 +54,31 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<(String), B
         .send()?;
     if response.status() != 302 {
         return Err(Box::from("wrong answer from second call"))
+    }
+    Ok(response.headers()
+        .get("location")
+        .ok_or("Second call: No location found in header")?
+        .to_str()
+        .unwrap()
+        .to_string())
+}
+
+fn third_call(client: &Client, sso_url: &str, location: &str, env: &str)-> Result<String, Box<dyn Error>> {
+    let url = Url::parse(location)?;
+    let query_params_to_take = ["client_id", "response_type", "scope", "redirect_uri"];
+
+    let query_params: Vec<_> = url
+        .query_pairs()
+        .filter(|x| query_params_to_take.contains(&x.0.to_string().as_str()))
+        .collect();
+
+    let response = client
+        .get(format!("{}/{}",sso_url, url.path()).as_str())
+        .query(&query_params)
+        .send()?;
+    println!("3 {:?}", &response);
+    if response.status() != 302 {
+        return Err(Box::from("wrong answer from third call"))
     }
     
     Ok(response.headers()

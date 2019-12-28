@@ -17,7 +17,7 @@ lazy_static! {
         m.insert("prod",&Env  {
             sso_url: "https://sso.myscript.com",
             client_id: "nebo.app",
-            sso_redirect_uri: "http://localhost:8080/callback"
+            sso_redirect_uri: "https://sso.myscript.com/callback"
         });
         m
     };
