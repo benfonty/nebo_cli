@@ -78,7 +78,7 @@ fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, B
         .get(format!("{}/{}",sso_url, url.path()).as_str())
         .query(&query_params)
         .send()?;
-    println!("3 {:?}", &response);
+    
     if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from third call"))
     }
