@@ -1,6 +1,7 @@
 use reqwest;
 use reqwest::RedirectPolicy;
 use reqwest::Client;
+use reqwest::StatusCode;
 
 use std::error::Error;
 use dialoguer::PasswordInput;
@@ -37,7 +38,7 @@ fn first_call(client: &Client, env: &str, sso_url: &str) -> Result<(), Box<dyn E
             ("redirect_uri", common::ENV[env].sso_redirect_uri)
         ])
         .send()?;
-    if response.status() != 302 {
+    if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from first call"))
     }
     Ok(())
@@ -53,7 +54,7 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<String, Box
         .post(format!("{}/public/customlogin",sso_url).as_str())
         .form(&[("email", login), ("password", password.as_str())])
         .send()?;
-    if response.status() != 302 {
+    if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from second call"))
     }
     Ok(response.headers()
@@ -78,7 +79,7 @@ fn third_call(client: &Client, sso_url: &str, location: &str, env: &str)-> Resul
         .query(&query_params)
         .send()?;
     println!("3 {:?}", &response);
-    if response.status() != 302 {
+    if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from third call"))
     }
     
