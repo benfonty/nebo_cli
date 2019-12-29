@@ -63,11 +63,10 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<String, Box
 
 fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, Box<dyn Error>> {
     let url = Url::parse(location)?;
-    let query_params_to_take = ["client_id", "response_type", "scope", "redirect_uri"];
 
     let query_params: Vec<_> = url
         .query_pairs()
-        .filter(|x| query_params_to_take.contains(&x.0.deref()))
+        .filter(|x| ["client_id", "response_type", "scope", "redirect_uri"].contains(&x.0.deref()))
         .collect();
     
     let response = client
@@ -78,23 +77,23 @@ fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, B
     if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from third call"))
     }
-    let callback_location = response.headers()
-        .get("location")
-        .ok_or("Second call: No location found in header")?
-        .to_str()
-        .unwrap();
-    let callback_url = Url::parse(callback_location)?;
+
+    let callback_url = Url::parse(
+        response.headers()
+            .get("location")
+            .ok_or("Second call: No location found in header")?
+            .to_str()
+            .unwrap()
+        )?;
 
     let fragment = callback_url.fragment().ok_or("No fragment in callback url")?;
-    
-    let fragment_end = fragment.find("&");
 
-    let fragment_begin = "access_token=".len();
-    let token = match fragment_end {
-        None => &fragment[fragment_begin..],
-        Some(index) => &fragment[fragment_begin..index]
-    };
-
-    Ok(format!("Bearer {}", token))
+    Ok(format!(
+        "Bearer {}", 
+        match fragment.find("&") {
+            None => &fragment["access_token=".len()..],
+            Some(index) => &fragment["access_token=".len()..index]
+        }
+    ))
 }
 
