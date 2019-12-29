@@ -5,9 +5,10 @@ use reqwest::Client;
 use std::error::Error;
 use dialoguer::PasswordInput;
 use std::env;
-use url::{Url, ParseError};
+use url::Url;
 
 use super::common;
+use std::ops::Deref;
 
 pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
     println!("calling token subcommand with env={} and login={}", env, login);
@@ -69,9 +70,9 @@ fn third_call(client: &Client, sso_url: &str, location: &str, env: &str)-> Resul
 
     let query_params: Vec<_> = url
         .query_pairs()
-        .filter(|x| query_params_to_take.contains(&x.0.to_string().as_str()))
+        .filter(|x| query_params_to_take.contains(&x.0.deref()))
         .collect();
-
+    
     let response = client
         .get(format!("{}/{}",sso_url, url.path()).as_str())
         .query(&query_params)
