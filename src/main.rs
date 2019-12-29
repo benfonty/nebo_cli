@@ -21,8 +21,10 @@ fn main() -> Result<(), Box<dyn Error>>{
     match cmd.subcommand() {
         ("token", args) => {
             let unwrapped_args = args.unwrap();
-            nebo_cli::token(unwrapped_args.value_of("env").unwrap(), unwrapped_args.value_of("login").unwrap())
+            let token = nebo_cli::token(unwrapped_args.value_of("env").unwrap(), unwrapped_args.value_of("login").unwrap())?;
+            println!("{}", token);
+            Ok(())
         },
-        _ => Err(Box::from("no match"))
+        _ => Err(Box::from("please choose a subcommand"))
     }   
 }

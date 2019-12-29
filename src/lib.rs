@@ -7,6 +7,6 @@ use std::error::Error;
 mod common;
 mod token;
 
-pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
+pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
     token::token(env, login)
 }

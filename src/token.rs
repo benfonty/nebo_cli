@@ -11,9 +11,7 @@ use url::Url;
 use super::common;
 use std::ops::Deref;
 
-pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
-    println!("calling token subcommand with env={} and login={}", env, login);
-
+pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
     let client = reqwest::ClientBuilder::new()
         .redirect(RedirectPolicy::none())
         .cookie_store(true)
@@ -23,9 +21,7 @@ pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
     
     first_call(&client, env, sso_url)?;
     let location = second_call(&client, sso_url, login)?;
-    println!("location = {}", location);
-    third_call(&client, sso_url, location.as_str())?;
-    Ok(())
+    Ok(third_call(&client, sso_url, location.as_str())?)
 } 
 
 fn first_call(client: &Client, env: &str, sso_url: &str) -> Result<(), Box<dyn Error>> {
@@ -82,12 +78,23 @@ fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, B
     if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from third call"))
     }
-    
-    Ok(response.headers()
+    let callback_location = response.headers()
         .get("location")
         .ok_or("Second call: No location found in header")?
         .to_str()
-        .unwrap()
-        .to_string())
+        .unwrap();
+    let callback_url = Url::parse(callback_location)?;
+
+    let fragment = callback_url.fragment().ok_or("No fragment in callback url")?;
+    
+    let fragment_end = fragment.find("&");
+
+    let fragment_begin = "access_token=".len();
+    let token = match fragment_end {
+        None => &fragment[fragment_begin..],
+        Some(index) => &fragment[fragment_begin..index]
+    };
+
+    Ok(format!("Bearer {}", token))
 }
 
