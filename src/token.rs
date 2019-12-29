@@ -24,7 +24,7 @@ pub fn token(env: &str, login: &str) -> Result<(), Box<dyn Error>> {
     first_call(&client, env, sso_url)?;
     let location = second_call(&client, sso_url, login)?;
     println!("location = {}", location);
-    third_call(&client, sso_url, location.as_str(), env)?;
+    third_call(&client, sso_url, location.as_str())?;
     Ok(())
 } 
 
@@ -65,7 +65,7 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<String, Box
         .to_string())
 }
 
-fn third_call(client: &Client, sso_url: &str, location: &str, env: &str)-> Result<String, Box<dyn Error>> {
+fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, Box<dyn Error>> {
     let url = Url::parse(location)?;
     let query_params_to_take = ["client_id", "response_type", "scope", "redirect_uri"];
 
