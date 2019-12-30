@@ -15,9 +15,9 @@ name = "nebo_cli"
 path = "src/main.rs"
 
 [dependencies]
-clap = "2.31.2"
-reqwest = "0.9.22"
-lazy_static = "1.4.0"
-futures = "0.1"
-dialoguer = "0.5.0"
-url = "2.1.0"
+clap = "2.*"
+reqwest = { version = "0.10.*", features = ["blocking", "cookies"] }
+lazy_static = "1.4.*"
+futures = "0.*"
+dialoguer = "0.5.*"
+url = "2.*"

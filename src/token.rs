@@ -1,6 +1,7 @@
 use reqwest;
-use reqwest::RedirectPolicy;
-use reqwest::Client;
+use reqwest::redirect::Policy;
+use reqwest::blocking::ClientBuilder;
+use reqwest::blocking::Client;
 use reqwest::StatusCode;
 
 use std::error::Error;
@@ -12,8 +13,8 @@ use super::common;
 use std::ops::Deref;
 
 pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
-    let client = reqwest::ClientBuilder::new()
-        .redirect(RedirectPolicy::none())
+    let client = ClientBuilder::new()
+        .redirect(Policy::none())
         .cookie_store(true)
         .build()?;
     
