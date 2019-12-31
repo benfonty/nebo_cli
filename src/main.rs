@@ -15,7 +15,18 @@ fn main() -> Result<(), Box<dyn Error>>{
                 .about("get the jwt token of a user")
                 .arg(args::env_arg())
                 .arg(args::login_arg())
-                    )
+        )
+        .subcommand(
+            App::new("sharePage")
+                .about("get the jwt token of a user")
+                .arg(args::env_arg())
+                .arg(args::login_arg())
+                .arg(args::uuid_arg())
+                .arg(args::signature_arg())
+                .arg(args::file_arg())
+                .arg(args::title_arg())
+            )
+                    
         .get_matches();
     
     match cmd.subcommand() {
@@ -23,6 +34,18 @@ fn main() -> Result<(), Box<dyn Error>>{
             let unwrapped_args = args.unwrap();
             let token = nebo_cli::token(unwrapped_args.value_of("env").unwrap(), unwrapped_args.value_of("login").unwrap())?;
             println!("{}", token);
+            Ok(())
+        },
+        ("sharePage", args) => {
+            let unwrapped_args = args.unwrap();
+            nebo_cli::share_page(
+                unwrapped_args.value_of("env").unwrap(), 
+                unwrapped_args.value_of("login").unwrap(),
+                unwrapped_args.value_of("uuid").unwrap(),
+                unwrapped_args.value_of("signature"),
+                unwrapped_args.value_of("file").unwrap(),
+                unwrapped_args.value_of("title")
+            )?;
             Ok(())
         },
         _ => Err(Box::from("please choose a subcommand"))
