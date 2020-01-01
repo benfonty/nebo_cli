@@ -9,9 +9,15 @@ use std::borrow::Cow;
 
 use serde::{Serialize};
 
+use reqwest::blocking::Client;
+use reqwest::StatusCode;
+
+use super::common;
+
 #[derive(Serialize)]
 struct PageMetadata<'a> {
-    title: &'a str,
+    pageTitle: &'a str,
+    pageId: &'a str,
     lastModificationDate: &'a str,
     creationDate: &'a str
 }
@@ -29,7 +35,8 @@ impl<'a> Page<'a> {
             uuid: uuid,
             signature: signature,
             metadata: PageMetadata {
-                title: title,
+                pageTitle: title,
+                pageId: "toto",
                 lastModificationDate: date,
                 creationDate: date
             }
@@ -37,7 +44,7 @@ impl<'a> Page<'a> {
     }
 }
 
-pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, filename: &str, title: Option<&str>) -> Result<(), Box<dyn Error>> {
+pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, filename: &str, title: Option<&str>) -> Result<(), Box<dyn Error>> {
     let now = Into::<DateTime<Utc>>::into(SystemTime::now());
     let signature = match signature {
         Some(s) => Cow::from(s),
@@ -47,10 +54,21 @@ pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, f
         Some(s) => Cow::from(s),
         None => Cow::from(format!("the page {}", uuid))
     };
-    let date = now.to_rfc3339_opts(SecondsFormat::Millis, true);
+    let date = now.to_rfc3339_opts(SecondsFormat::Secs, true);
     println!("sharing page {} on {}", &uuid, &env);
     let serialized = serde_json::to_string(&Page::new (&uuid, &signature, &title, &date)).unwrap();
-    println!("{}", serialized);
+    let response = Client::new()
+        .post(format!("{}/api/v2.0/nebo/pages", common::ENV[env].neboapp_url).as_str())
+        .header(http::header::AUTHORIZATION, token)
+        .header(http::header::CONTENT_TYPE, "application/json")
+        .body(serialized)
+        .send()?;
+    
+    let status = response.status();
+    println!("{}", response.text()?);
+    if !status.is_success() {
+        return Err(Box::from("error during call to api"));
+    }
     
     Ok(())
 } 

@@ -13,5 +13,6 @@ pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
 }
 
 pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, filename: &str, title: Option<&str>) -> Result<(), Box<dyn Error>> {
-    share_page::share_page(env, login, uuid, signature, filename, title)
+    let token = token::token(env, login)?;
+    share_page::share_page(env, &token, uuid, signature, filename, title)
 } 

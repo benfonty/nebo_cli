@@ -73,12 +73,11 @@ fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, B
     let response = client
         .get(format!("{}{}",sso_url, url.path()).as_str())
         .query(&query_params)
-        .send()?;
-    
+        .send()?;        
     if response.status() != StatusCode::FOUND {
         return Err(Box::from("wrong answer from third call"))
     }
-
+    
     let callback_url = Url::parse(
         response.headers()
             .get("location")
