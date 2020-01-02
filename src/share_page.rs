@@ -10,7 +10,6 @@ use std::borrow::Cow;
 use serde::{Serialize};
 
 use reqwest::blocking::Client;
-use reqwest::StatusCode;
 
 use super::common;
 
@@ -55,7 +54,13 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
         None => Cow::from(format!("the page {}", uuid))
     };
     let date = now.to_rfc3339_opts(SecondsFormat::Secs, true);
+    
     println!("sharing page {} on {}", &uuid, &env);
+    call_share_api(env, token, uuid, &signature, &title, &date)
+} 
+
+fn call_share_api(env: &str, token: &str,uuid: &str, signature: &str, title: &str, date: &str) -> Result<(), Box<dyn Error>> {
+    print!("Calling api... ");
     let serialized = serde_json::to_string(&Page::new (&uuid, &signature, &title, &date)).unwrap();
     let response = Client::new()
         .post(format!("{}/api/v2.0/nebo/pages", common::ENV[env].neboapp_url).as_str())
@@ -65,10 +70,10 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
         .send()?;
     
     let status = response.status();
-    println!("{}", response.text()?);
+    let _dummy = response.text();
     if !status.is_success() {
         return Err(Box::from("error during call to api"));
     }
-    
-    Ok(())
-} 
+    println!("ok");
+    return Ok(());
+}
