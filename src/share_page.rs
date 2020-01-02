@@ -15,10 +15,14 @@ use super::common;
 
 #[derive(Serialize)]
 struct PageMetadata<'a> {
-    pageTitle: &'a str,
-    pageId: &'a str,
-    lastModificationDate: &'a str,
-    creationDate: &'a str
+    #[serde(rename = "pageTitle")]
+    page_title: &'a str,
+    #[serde(rename = "pageId")]
+    page_id: &'a str,
+    #[serde(rename = "lastModificationDate")]
+    last_modification_date: &'a str,
+    #[serde(rename = "creationDate")]
+    creation_date: &'a str
 }
 
 #[derive(Serialize)]
@@ -34,10 +38,10 @@ impl<'a> Page<'a> {
             uuid: uuid,
             signature: signature,
             metadata: PageMetadata {
-                pageTitle: title,
-                pageId: "toto",
-                lastModificationDate: date,
-                creationDate: date
+                page_title: title,
+                page_id: "toto",
+                last_modification_date: date,
+                creation_date: date
             }
         }
     }
