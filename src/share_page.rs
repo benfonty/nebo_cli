@@ -35,34 +35,34 @@ struct Page<'a> {
 }
 
 #[derive(Deserialize, Debug)]
-struct Credentials<'a> {
+struct Credentials {
     #[serde(rename = "accessToken")]
-    access_token: &'a str,
+    access_token: String,
     #[serde(rename = "identityPoolId")]
-    identity_pool_id: &'a str,
-    region: &'a str,
+    identity_pool_id: String,
+    region: String,
     #[serde(rename = "identityId")]
-    identity_id: &'a str,
+    identity_id: String,
     #[serde(rename = "identityProvider")]
-    identity_provider: &'a str,
+    identity_provider: String
 }
 
 #[derive(Deserialize, Debug)]
-struct S3<'a> {
-    bucket: &'a str,
+struct S3 {
+    bucket: String,
     #[serde(rename = "clientDirectoryPrefix")]
-    client_directory_prefix: &'a str,
-    region: &'a str,
+    client_directory_prefix: String,
+    region: String,
     #[serde(rename = "kmsKey")]
-    kms_key: &'a str
+    kms_key: String
 }
 
 #[derive(Deserialize, Debug)]
-struct Configuration<'a> {
+struct Configuration {
     #[serde(rename = "sharingUrlPrefix")]
-    sharing_url_prefix: &'a str,
-    s3: S3<'a>,
-    credentials: Credentials<'a>
+    sharing_url_prefix: String,
+    s3: S3,
+    credentials: Credentials
 }
 
 impl<'a> Page<'a> {
@@ -112,7 +112,7 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
     Ok(())
 } 
 
-fn call_configutation_api<'a>(env: &'a str, client: &Client) -> Result<Configuration<'a>, Box<dyn Error>>{
+fn call_configutation_api(env: &str, client: &Client) -> Result<Configuration, Box<dyn Error>>{
     print!("Calling configuration api... ");
     let response = client
         .get(format!("{}/api/v1.0/nebo/configuration", common::ENV[env].neboapp_url).as_str())
