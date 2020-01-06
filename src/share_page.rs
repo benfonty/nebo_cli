@@ -20,6 +20,15 @@ use rusoto_core::Region;
 use std::collections::HashMap;
 use std::env;
 
+use rusoto_s3::S3Client;
+use rusoto_s3::S3;
+use s4::S4;
+use rusoto_s3::PutObjectRequest;
+use std::fs::File;
+use std::io::Read;
+
+use std::str::FromStr;
+
 
 use super::common;
 
@@ -56,7 +65,7 @@ struct Credentials {
 }
 
 #[derive(Deserialize, Debug)]
-struct S3 {
+struct S3Configuration {
     bucket: String,
     #[serde(rename = "clientDirectoryPrefix")]
     client_directory_prefix: String,
@@ -69,7 +78,7 @@ struct S3 {
 struct Configuration {
     #[serde(rename = "sharingUrlPrefix")]
     sharing_url_prefix: String,
-    s3: S3,
+    s3: S3Configuration,
     credentials: Credentials
 }
 
@@ -116,12 +125,38 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
     println!("sharing page {} on {}", &uuid, &env);
     call_share_api(env, &client, uuid, &signature, &title, &date)?;
     let configuration = call_configutation_api(env, &client)?;
-    get_cognito_credentials(
+    /*get_cognito_credentials(
         &configuration.credentials.access_token, 
         &configuration.credentials.identity_id, 
-        &configuration.credentials.identity_provider)?;
+        &configuration.credentials.identity_provider,
+        &configuration.credentials.region)?;*/
+    upload_file(
+        filename, 
+        &configuration.s3.bucket, 
+        &configuration.s3.client_directory_prefix, 
+        &configuration.s3.region, 
+        uuid, 
+        &signature)?;
     Ok(())
 } 
+
+fn upload_file(filename: &str, bucket: &str, prefix: &str, region: &str, uuid: &str, signature: &str) -> Result<(), Box<dyn Error>>{
+    print!("uploading file to S3... ");
+    let client = S3Client::new(Region::from_str(region)?);
+    let mut request = PutObjectRequest::default();
+    request.bucket = bucket.into();
+    request.content_disposition = Some("attachment; filename=page.nebo; filename*=UTF-8''page.nebo".into());
+    request.content_type = Some("application/vnd.myscript.nebo".into());
+    request.key = format!("{}{}_{}.nebo", prefix, uuid, signature);
+    let mut content = Vec::new();
+    let mut source = File::open(filename)?;
+    source.read_to_end(&mut content)?;
+    request.body = Some(content.into());
+    //println!("{:?}", request);
+    let result = client.put_object(request).sync();
+    println!("{:?}", result);
+    Ok(())
+}
 
 fn call_configutation_api(env: &str, client: &Client) -> Result<Configuration, Box<dyn Error>>{
     print!("Calling configuration api... ");
@@ -155,13 +190,13 @@ fn call_share_api(env: &str, client: &Client,uuid: &str, signature: &str, title:
     Ok(())
 }
 
-fn get_cognito_credentials(token: &str, identity_id: &str, provider: &str)-> Result<(), Box<dyn Error>> {
+fn get_cognito_credentials(token: &str, identity_id: &str, provider: &str, region: &str)-> Result<(), Box<dyn Error>> {
     // It turns out that, event if the get_credentials_for_identity doesn't need credentials,
     // It doesn't work if there is really no credentials given. So let's give some credentials
     env::set_var("AWS_SECRET_ACCESS_KEY", "dummy2");
     env::set_var("AWS_ACCESS_KEY_ID", "dummy2");
 
-    let client = CognitoIdentityClient::new(Region::UsWest2);
+    let client = CognitoIdentityClient::new(Region::from_str(region)?);
     let mut input = GetCredentialsForIdentityInput::default();
     input.identity_id = identity_id.into();
     let mut logins = HashMap::new();
@@ -173,8 +208,6 @@ fn get_cognito_credentials(token: &str, identity_id: &str, provider: &str)-> Res
     let credentials = response.credentials.ok_or("No credentials given by cognito identity")?;
     env::set_var("AWS_ACCESS_KEY_ID", credentials.access_key_id.ok_or("No access key id given by cognito identity")?);
     env::set_var("AWS_SECRET_ACCESS_KEY", credentials.secret_key.ok_or("No secret key given by cognito identity")?);
-
-    println!("{} {}", env::var("AWS_ACCESS_KEY_ID")?, env::var("AWS_SECRET_ACCESS_KEY")?);
 
     Ok(())
 }
