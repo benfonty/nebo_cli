@@ -13,6 +13,14 @@ use reqwest::blocking::Client;
 use reqwest::blocking::ClientBuilder;
 use reqwest::header::HeaderMap;
 
+use rusoto_cognito_identity::GetCredentialsForIdentityInput;
+use rusoto_cognito_identity::CognitoIdentityClient;
+use rusoto_cognito_identity::CognitoIdentity;
+use rusoto_core::Region;
+use std::collections::HashMap;
+use std::env;
+
+
 use super::common;
 
 #[derive(Serialize)]
@@ -108,7 +116,10 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
     println!("sharing page {} on {}", &uuid, &env);
     call_share_api(env, &client, uuid, &signature, &title, &date)?;
     let configuration = call_configutation_api(env, &client)?;
-    println!("{:?}", configuration);
+    get_cognito_credentials(
+        &configuration.credentials.access_token, 
+        &configuration.credentials.identity_id, 
+        &configuration.credentials.identity_provider)?;
     Ok(())
 } 
 
@@ -141,5 +152,29 @@ fn call_share_api(env: &str, client: &Client,uuid: &str, signature: &str, title:
         return Err(Box::from("error during call to share api"));
     }
     println!("ok");
+    Ok(())
+}
+
+fn get_cognito_credentials(token: &str, identity_id: &str, provider: &str)-> Result<(), Box<dyn Error>> {
+    // It turns out that, event if the get_credentials_for_identity doesn't need credentials,
+    // It doesn't work if there is really no credentials given. So let's give some credentials
+    env::set_var("AWS_SECRET_ACCESS_KEY", "dummy2");
+    env::set_var("AWS_ACCESS_KEY_ID", "dummy2");
+
+    let client = CognitoIdentityClient::new(Region::UsWest2);
+    let mut input = GetCredentialsForIdentityInput::default();
+    input.identity_id = identity_id.into();
+    let mut logins = HashMap::new();
+    logins.insert(provider.into(), token.into());
+    input.logins = Some(logins);
+    let response = client.get_credentials_for_identity(input).sync()?;
+
+    // Let's set the new env vars to the credentials given by the cognito identity
+    let credentials = response.credentials.ok_or("No credentials given by cognito identity")?;
+    env::set_var("AWS_ACCESS_KEY_ID", credentials.access_key_id.ok_or("No access key id given by cognito identity")?);
+    env::set_var("AWS_SECRET_ACCESS_KEY", credentials.secret_key.ok_or("No secret key given by cognito identity")?);
+
+    println!("{} {}", env::var("AWS_ACCESS_KEY_ID")?, env::var("AWS_SECRET_ACCESS_KEY")?);
+
     Ok(())
 }
