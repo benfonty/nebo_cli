@@ -29,7 +29,7 @@ use std::io::Read;
 use std::str::FromStr;
 
 const LOCAL_TEST: &str = "LOCAL_TEST";
-
+const NO_KMS: &str = "NO_KMS_KEY";
 
 use super::common;
 
@@ -137,11 +137,20 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
         &configuration.s3.region, 
         configuration.s3.service_endpoint.as_deref(),
         uuid, 
-        &signature)?;
+        &signature,
+        &configuration.s3.kms_key)?;
     Ok(())
 } 
 
-fn upload_file(filename: &str, bucket: &str, prefix: &str, identity_pool_id: &str, region: &str, service_endpoint: Option<&str>, uuid: &str, signature: &str) -> Result<(), Box<dyn Error>>{
+fn upload_file(filename: &str, 
+    bucket: &str, 
+    prefix: &str, 
+    identity_pool_id: &str, 
+    region: &str, 
+    service_endpoint: Option<&str>, 
+    uuid: &str, 
+    signature: &str,
+    kms_key: &str) -> Result<(), Box<dyn Error>>{
     print!("uploading file to S3... ");
     let local_region;
     
@@ -160,6 +169,10 @@ fn upload_file(filename: &str, bucket: &str, prefix: &str, identity_pool_id: &st
     request.content_disposition = Some("attachment; filename=page.nebo; filename*=UTF-8''page.nebo".into());
     request.content_type = Some("application/vnd.myscript.nebo".into());
     request.key = format!("{}{}_{}.nebo", prefix, uuid, signature);
+    if kms_key != NO_KMS {
+        request.server_side_encryption = Some("aws:kms".into());
+        request.ssekms_key_id = Some(kms_key.into());
+    }
     let mut content = Vec::new();
     let mut source = File::open(filename)?;
     source.read_to_end(&mut content)?;
