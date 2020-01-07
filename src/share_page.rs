@@ -29,6 +29,8 @@ use std::io::Read;
 
 use std::str::FromStr;
 
+const LOCAL_TEST: &str = "LOCAL_TEST";
+
 
 use super::common;
 
@@ -71,7 +73,9 @@ struct S3Configuration {
     client_directory_prefix: String,
     region: String,
     #[serde(rename = "kmsKey")]
-    kms_key: String
+    kms_key: String,
+    #[serde(rename = "serviceEndpoint")]
+    service_endpoint: Option<String>
 }
 
 #[derive(Deserialize, Debug)]
@@ -125,24 +129,39 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
     println!("sharing page {} on {}", &uuid, &env);
     call_share_api(env, &client, uuid, &signature, &title, &date)?;
     let configuration = call_configutation_api(env, &client)?;
+    if &configuration.credentials.identity_pool_id != LOCAL_TEST {
     /*get_cognito_credentials(
         &configuration.credentials.access_token, 
         &configuration.credentials.identity_id, 
         &configuration.credentials.identity_provider,
         &configuration.credentials.region)?;*/
+    }
     upload_file(
         filename, 
         &configuration.s3.bucket, 
         &configuration.s3.client_directory_prefix, 
+        &configuration.credentials.identity_pool_id,
         &configuration.s3.region, 
+        configuration.s3.service_endpoint.as_deref(),
         uuid, 
         &signature)?;
     Ok(())
 } 
 
-fn upload_file(filename: &str, bucket: &str, prefix: &str, region: &str, uuid: &str, signature: &str) -> Result<(), Box<dyn Error>>{
+fn upload_file(filename: &str, bucket: &str, prefix: &str, identity_pool_id: &str, region: &str, service_endpoint: Option<&str>, uuid: &str, signature: &str) -> Result<(), Box<dyn Error>>{
     print!("uploading file to S3... ");
-    let client = S3Client::new(Region::from_str(region)?);
+    let local_region;
+    
+    if identity_pool_id == LOCAL_TEST {
+        local_region = Region::Custom {
+            name: region.into(),
+            endpoint: service_endpoint.ok_or("missing service endpoint for local test")?.into(),
+        };
+    }
+    else {
+        local_region = Region::from_str(region)?;
+    }
+    let client = S3Client::new(local_region);
     let mut request = PutObjectRequest::default();
     request.bucket = bucket.into();
     request.content_disposition = Some("attachment; filename=page.nebo; filename*=UTF-8''page.nebo".into());
@@ -152,9 +171,15 @@ fn upload_file(filename: &str, bucket: &str, prefix: &str, region: &str, uuid: &
     let mut source = File::open(filename)?;
     source.read_to_end(&mut content)?;
     request.body = Some(content.into());
-    //println!("{:?}", request);
+    // https://github.com/localstack/localstack/issues/1647
     let result = client.put_object(request).sync();
-    println!("{:?}", result);
+    if let Err(error) = result {
+        if !error.to_string().contains("Expected EndElement PutObjectResponse") {
+            return Err(Box::new(error));
+        }
+    }
+
+    println!("ok");
     Ok(())
 }
 
@@ -170,7 +195,7 @@ fn call_configutation_api(env: &str, client: &Client) -> Result<Configuration, B
         return Err(Box::from("error during call to configuration api"));
     }
     println!("ok");
-    Ok(serde_json::from_str(&text).unwrap())
+    Ok(serde_json::from_str(&text)?)
 }
 
 fn call_share_api(env: &str, client: &Client,uuid: &str, signature: &str, title: &str, date: &str) -> Result<(), Box<dyn Error>> {
