@@ -130,11 +130,12 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
     call_share_api(env, &client, uuid, &signature, &title, &date)?;
     let configuration = call_configutation_api(env, &client)?;
     if &configuration.credentials.identity_pool_id != LOCAL_TEST {
-    /*get_cognito_credentials(
-        &configuration.credentials.access_token, 
-        &configuration.credentials.identity_id, 
-        &configuration.credentials.identity_provider,
-        &configuration.credentials.region)?;*/
+        get_cognito_credentials(
+            &configuration.credentials.access_token, 
+            &configuration.credentials.identity_id, 
+            &configuration.credentials.identity_provider,
+            &configuration.credentials.region
+        )?;
     }
     upload_file(
         filename, 
@@ -233,6 +234,7 @@ fn get_cognito_credentials(token: &str, identity_id: &str, provider: &str, regio
     let credentials = response.credentials.ok_or("No credentials given by cognito identity")?;
     env::set_var("AWS_ACCESS_KEY_ID", credentials.access_key_id.ok_or("No access key id given by cognito identity")?);
     env::set_var("AWS_SECRET_ACCESS_KEY", credentials.secret_key.ok_or("No secret key given by cognito identity")?);
+    env::set_var("AWS_SESSION_TOKEN", credentials.session_token.ok_or("No token given by cognito identity")?);
 
     Ok(())
 }
