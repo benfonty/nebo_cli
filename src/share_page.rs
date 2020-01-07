@@ -22,7 +22,6 @@ use std::env;
 
 use rusoto_s3::S3Client;
 use rusoto_s3::S3;
-use s4::S4;
 use rusoto_s3::PutObjectRequest;
 use std::fs::File;
 use std::io::Read;
