@@ -34,18 +34,16 @@ const LOCAL_TEST: &str = "LOCAL_TEST";
 use super::common;
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct PageMetadata<'a> {
-    #[serde(rename = "pageTitle")]
     page_title: &'a str,
-    #[serde(rename = "pageId")]
     page_id: &'a str,
-    #[serde(rename = "lastModificationDate")]
     last_modification_date: &'a str,
-    #[serde(rename = "creationDate")]
     creation_date: &'a str
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct Page<'a> {
     uuid: &'a str,
     signature: &'a str,
@@ -53,33 +51,28 @@ struct Page<'a> {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct Credentials {
-    #[serde(rename = "accessToken")]
     access_token: String,
-    #[serde(rename = "identityPoolId")]
     identity_pool_id: String,
     region: String,
-    #[serde(rename = "identityId")]
     identity_id: String,
-    #[serde(rename = "identityProvider")]
     identity_provider: String
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct S3Configuration {
     bucket: String,
-    #[serde(rename = "clientDirectoryPrefix")]
     client_directory_prefix: String,
     region: String,
-    #[serde(rename = "kmsKey")]
     kms_key: String,
-    #[serde(rename = "serviceEndpoint")]
     service_endpoint: Option<String>
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct Configuration {
-    #[serde(rename = "sharingUrlPrefix")]
     sharing_url_prefix: String,
     s3: S3Configuration,
     credentials: Credentials
