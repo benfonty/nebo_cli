@@ -51,7 +51,15 @@ impl<'a> Page<'a> {
 
 
 
-pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, filename: &str, title: Option<&str>) -> Result<(), Box<dyn Error>> {
+pub fn share_page(
+    env: &str, 
+    token: &str, 
+    uuid: &str, 
+    signature: Option<&str>, 
+    filename: &str, 
+    title: Option<&str>, 
+    share_with_myscript: Option<&str>,
+    collect_login: Option<&str>) -> Result<(), Box<dyn Error>> {
     let now = Into::<DateTime<Utc>>::into(SystemTime::now());
     let signature = match signature {
         Some(s) => Cow::from(s),
@@ -85,7 +93,9 @@ pub fn share_page(env: &str, token: &str, uuid: &str, signature: Option<&str>, f
         configuration.s3.service_endpoint.as_deref(),
         uuid, 
         &signature,
-        &configuration.s3.kms_key)?;
+        &configuration.s3.kms_key,
+        share_with_myscript,
+        collect_login)?;
     Ok(())
 } 
 

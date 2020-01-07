@@ -25,6 +25,8 @@ fn main() -> Result<(), Box<dyn Error>>{
                 .arg(args::signature_arg())
                 .arg(args::file_arg())
                 .arg(args::title_arg())
+                .arg(args::share_with_myscript_arg())
+                .arg(args::collect_login_arg())
             )
                     
         .get_matches();
@@ -44,7 +46,9 @@ fn main() -> Result<(), Box<dyn Error>>{
                 unwrapped_args.value_of("uuid").unwrap(),
                 unwrapped_args.value_of("signature"),
                 unwrapped_args.value_of("file").unwrap(),
-                unwrapped_args.value_of("title")
+                unwrapped_args.value_of("title"),
+                unwrapped_args.value_of("share-with-myscript"),
+                unwrapped_args.value_of("collect-login")
             )?;
             Ok(())
         },

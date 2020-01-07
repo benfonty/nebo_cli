@@ -60,3 +60,21 @@ pub fn title_arg<'a>()-> Arg<'a, 'a> {
         .required(false)
         .env("NEBOCLI_TITLE")
 }
+
+pub fn share_with_myscript_arg<'a>()-> Arg<'a, 'a> {
+    Arg::with_name("share-with-myscript")
+        .long("share-with-myscript")
+        .value_name("share-with-myscript")
+        .help("the login")
+        .takes_value(true)
+        .env("NEBOCLI_SHARE_WITH_MYSCRIPT")
+}
+
+pub fn collect_login_arg<'a>()-> Arg<'a, 'a> {
+    Arg::with_name("collect-login")
+        .long("collect-login")
+        .value_name("collect-login")
+        .help("the collect login")
+        .takes_value(true)
+        .env("NEBOCLI_COLLECT_LOGIN")
+}

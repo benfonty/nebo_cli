@@ -26,7 +26,9 @@ pub fn upload_file(filename: &str,
     service_endpoint: Option<&str>, 
     uuid: &str, 
     signature: &str,
-    kms_key: &str) -> Result<(), Box<dyn Error>>{
+    kms_key: &str,
+    share_with_myscript: Option<&str>,
+    collect_login: Option<&str>) -> Result<(), Box<dyn Error>>{
     print!("uploading file to S3... ");
     let local_region;
     
@@ -49,6 +51,7 @@ pub fn upload_file(filename: &str,
         request.server_side_encryption = Some("aws:kms".into());
         request.ssekms_key_id = Some(kms_key.into());
     }
+    request.metadata = Some(generate_metadata(collect_login, signature, share_with_myscript));
     let mut content = Vec::new();
     let mut source = File::open(filename)?;
     source.read_to_end(&mut content)?;
@@ -87,4 +90,16 @@ pub fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: 
     }
 
     Ok(())
+}
+
+fn generate_metadata(login: Option<&str>, signature: &str, share_with_myscript: Option<&str>) -> HashMap<String, String> {
+    let mut metadata = HashMap::new();
+    metadata.insert("x-amz-meta-content-sha256".into(), signature.into());
+    if let Some(s) = share_with_myscript {
+        metadata.insert("x-amz-meta-share-with-myscript".into(), s.into());
+    }
+    if let Some(l) = login {
+        metadata.insert("x-amz-meta-login".into(), l.into());
+    }
+    metadata
 }
