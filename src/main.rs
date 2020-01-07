@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>>{
         )
         .subcommand(
             App::new("sharePage")
-                .about("get the jwt token of a user")
+                .about("share a page")
                 .arg(args::env_arg())
                 .arg(args::login_arg())
                 .arg(args::uuid_arg())
@@ -28,6 +28,13 @@ fn main() -> Result<(), Box<dyn Error>>{
                 .arg(args::share_with_myscript_arg())
                 .arg(args::collect_login_arg())
             )
+            .subcommand(
+                App::new("deletePage")
+                    .about("unshare a page")
+                    .arg(args::env_arg())
+                    .arg(args::login_arg())
+                    .arg(args::uuid_arg())
+                )
                     
         .get_matches();
     
@@ -49,6 +56,15 @@ fn main() -> Result<(), Box<dyn Error>>{
                 unwrapped_args.value_of("title"),
                 unwrapped_args.value_of("share-with-myscript"),
                 unwrapped_args.value_of("collect-login")
+            )?;
+            Ok(())
+        },
+        ("deletePage", args) => {
+            let unwrapped_args = args.unwrap();
+            nebo_cli::delete_page(
+                unwrapped_args.value_of("env").unwrap(), 
+                unwrapped_args.value_of("login").unwrap(),
+                unwrapped_args.value_of("uuid").unwrap(),
             )?;
             Ok(())
         },

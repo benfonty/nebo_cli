@@ -52,3 +52,5 @@ pub fn get_default_client(token: &str) -> Client {
         .build()
         .unwrap()
 }
+
+pub const NEBO_API_URI_PAGES: &str = "/api/v2.0/nebo/pages";

@@ -99,11 +99,11 @@ pub fn share_page(
     Ok(())
 } 
 
-fn call_share_api(env: &str, client: &Client,uuid: &str, signature: &str, title: &str, date: &str) -> Result<(), Box<dyn Error>> {
+fn call_share_api(env: &str, client: &Client, uuid: &str, signature: &str, title: &str, date: &str) -> Result<(), Box<dyn Error>> {
     print!("Calling share api... ");
     let serialized = serde_json::to_string(&Page::new (&uuid, &signature, &title, &date)).unwrap();
     let response = client
-        .post(format!("{}/api/v2.0/nebo/pages", common::ENV[env].neboapp_url).as_str())
+        .post(format!("{}{}", common::ENV[env].neboapp_url, common::NEBO_API_URI_PAGES).as_str())
         .body(serialized)
         .send()?;
     
