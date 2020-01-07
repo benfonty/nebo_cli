@@ -7,6 +7,7 @@ use std::error::Error;
 mod common;
 mod token;
 mod share_page;
+mod configuration;
 
 pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
     token::token(env, login)
