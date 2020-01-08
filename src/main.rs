@@ -35,6 +35,24 @@ fn main() -> Result<(), Box<dyn Error>>{
                     .arg(args::login_arg())
                     .arg(args::uuid_arg())
                 )
+                .subcommand(
+                    App::new("addContact")
+                        .about("add a contact")
+                        .arg(args::env_arg())
+                        .arg(args::login_arg())
+                        .arg(args::uuid_arg())
+                        .arg(args::email_arg())
+                        .arg(args::message_arg())
+                        .arg(args::name_arg())
+                    )
+                    .subcommand(
+                        App::new("removeContact")
+                            .about("remove a contact")
+                            .arg(args::env_arg())
+                            .arg(args::login_arg())
+                            .arg(args::uuid_arg())
+                            .arg(args::email_arg())
+                        )
                     
         .get_matches();
     
@@ -65,6 +83,28 @@ fn main() -> Result<(), Box<dyn Error>>{
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),
                 unwrapped_args.value_of("uuid").unwrap(),
+            )?;
+            Ok(())
+        },
+        ("addContact", args) => {
+            let unwrapped_args = args.unwrap();
+            nebo_cli::add_contact(
+                unwrapped_args.value_of("env").unwrap(), 
+                unwrapped_args.value_of("login").unwrap(),
+                unwrapped_args.value_of("uuid").unwrap(),
+                unwrapped_args.value_of("email").unwrap(),
+                unwrapped_args.value_of("name"),
+                unwrapped_args.value_of("message"),
+            )?;
+            Ok(())
+        },
+        ("removeContact", args) => {
+            let unwrapped_args = args.unwrap();
+            nebo_cli::remove_contact(
+                unwrapped_args.value_of("env").unwrap(), 
+                unwrapped_args.value_of("login").unwrap(),
+                unwrapped_args.value_of("uuid").unwrap(),
+                unwrapped_args.value_of("email").unwrap()
             )?;
             Ok(())
         },

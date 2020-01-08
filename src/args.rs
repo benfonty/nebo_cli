@@ -78,3 +78,33 @@ pub fn collect_login_arg<'a>()-> Arg<'a, 'a> {
         .takes_value(true)
         .env("NEBOCLI_COLLECT_LOGIN")
 }
+
+pub fn email_arg<'a>()-> Arg<'a, 'a> {
+    Arg::with_name("email")
+        .long("email")
+        .value_name("email")
+        .help("the email")
+        .takes_value(true)
+        .required(true)
+        .env("NEBOCLI_EMAIL")
+}
+
+pub fn name_arg<'a>()-> Arg<'a, 'a> {
+    Arg::with_name("name")
+        .long("name")
+        .value_name("name")
+        .help("the name")
+        .takes_value(true)
+        .required(false)
+        .env("NEBOCLI_NAME")
+}
+
+pub fn message_arg<'a>()-> Arg<'a, 'a> {
+    Arg::with_name("message")
+        .long("message")
+        .value_name("message")
+        .help("the message")
+        .takes_value(true)
+        .required(false)
+        .env("NEBOCLI_MESSAGE")
+}

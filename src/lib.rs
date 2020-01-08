@@ -9,6 +9,7 @@ mod token;
 mod share_page;
 mod delete_page;
 mod configuration;
+mod contacts;
 
 pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
     token::token(env, login)
@@ -22,4 +23,14 @@ pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, f
 pub fn delete_page(env: &str, login: &str, uuid: &str) -> Result<(), Box<dyn Error>> {
     let token = token::token(env, login)?;
     delete_page::delete_page(env, &token, uuid)
+} 
+
+pub fn add_contact(env: &str, login: &str, uuid: &str, email: &str, name: Option<&str>, message: Option<&str>) -> Result<(), Box<dyn Error>> {
+    let token = token::token(env, login)?;
+    contacts::add_contact(env, &token, uuid, email, name, message)
+} 
+
+pub fn remove_contact(env: &str, login: &str, uuid: &str, email: &str) -> Result<(), Box<dyn Error>> {
+    let token = token::token(env, login)?;
+    contacts::remove_contact(env, &token, uuid, email)
 } 
