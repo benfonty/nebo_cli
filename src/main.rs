@@ -2,6 +2,8 @@ use std::error::Error;
 
 use clap::{App};
 use ::nebo_cli;
+
+mod logs;
 mod args;
 
 
@@ -10,11 +12,13 @@ fn main() -> Result<(), Box<dyn Error>>{
         .version("1.0")
         .author("benoît F")
         .about("rust version of nebo_cli")
+        
         .subcommand(
             App::new("token")
                 .about("get the jwt token of a user")
                 .arg(args::env_arg())
                 .arg(args::login_arg())
+                .arg(args::verbose_arg())
         )
         .subcommand(
             App::new("sharePage")
@@ -27,44 +31,50 @@ fn main() -> Result<(), Box<dyn Error>>{
                 .arg(args::title_arg())
                 .arg(args::share_with_myscript_arg())
                 .arg(args::collect_login_arg())
+                .arg(args::verbose_arg())
             )
-            .subcommand(
-                App::new("deletePage")
-                    .about("unshare a page")
-                    .arg(args::env_arg())
-                    .arg(args::login_arg())
-                    .arg(args::uuid_arg())
-                )
-                .subcommand(
-                    App::new("addContact")
-                        .about("add a contact")
-                        .arg(args::env_arg())
-                        .arg(args::login_arg())
-                        .arg(args::uuid_arg())
-                        .arg(args::email_arg())
-                        .arg(args::message_arg())
-                        .arg(args::name_arg())
-                    )
-                    .subcommand(
-                        App::new("removeContact")
-                            .about("remove a contact")
-                            .arg(args::env_arg())
-                            .arg(args::login_arg())
-                            .arg(args::uuid_arg())
-                            .arg(args::email_arg())
-                        )
+        .subcommand(
+            App::new("deletePage")
+                .about("unshare a page")
+                .arg(args::env_arg())
+                .arg(args::login_arg())
+                .arg(args::uuid_arg())
+                .arg(args::verbose_arg())
+            )
+        .subcommand(
+            App::new("addContact")
+                .about("add a contact")
+                .arg(args::uuid_arg())
+                .arg(args::env_arg())
+                .arg(args::login_arg())
+                .arg(args::email_arg())
+                .arg(args::message_arg())
+                .arg(args::name_arg())
+                .arg(args::verbose_arg())
+            )
+        .subcommand(
+            App::new("removeContact")
+                .about("remove a contact")
+                .arg(args::uuid_arg())
+                .arg(args::env_arg())
+                .arg(args::login_arg())
+                .arg(args::email_arg())
+                .arg(args::verbose_arg())
+            )
                     
         .get_matches();
     
     match cmd.subcommand() {
         ("token", args) => {
             let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
             let token = nebo_cli::token(unwrapped_args.value_of("env").unwrap(), unwrapped_args.value_of("login").unwrap())?;
             println!("{}", token);
             Ok(())
         },
         ("sharePage", args) => {
             let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
             nebo_cli::share_page(
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),
@@ -79,6 +89,7 @@ fn main() -> Result<(), Box<dyn Error>>{
         },
         ("deletePage", args) => {
             let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
             nebo_cli::delete_page(
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),
@@ -88,6 +99,7 @@ fn main() -> Result<(), Box<dyn Error>>{
         },
         ("addContact", args) => {
             let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
             nebo_cli::add_contact(
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),
@@ -100,6 +112,7 @@ fn main() -> Result<(), Box<dyn Error>>{
         },
         ("removeContact", args) => {
             let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
             nebo_cli::remove_contact(
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),

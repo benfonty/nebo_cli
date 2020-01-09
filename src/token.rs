@@ -8,11 +8,13 @@ use std::error::Error;
 use dialoguer::PasswordInput;
 use std::env;
 use url::Url;
+use log::{debug};
 
 use super::common;
 use std::ops::Deref;
 
 pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
+    debug!("Getting authent token for {} to connect to sso {}", login, env);
     let client = ClientBuilder::new()
         .redirect(Policy::none())
         .cookie_store(true)
@@ -26,6 +28,7 @@ pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
 } 
 
 fn first_call(client: &Client, env: &str, sso_url: &str) -> Result<(), Box<dyn Error>> {
+    debug!("\tFirst call");
     let response = client
         .get(format!("{}/oauth/authorize",sso_url).as_str())
         .query(&[
@@ -46,6 +49,7 @@ fn get_password() -> Result<String, std::io::Error> {
 }
 
 fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<String, Box<dyn Error>> {
+    debug!("\tSecond call");
     let password = get_password()?;
     let response = client
         .post(format!("{}/public/customlogin",sso_url).as_str())
@@ -63,6 +67,7 @@ fn second_call(client: &Client, sso_url: &str, login: &str)-> Result<String, Box
 }
 
 fn third_call(client: &Client, sso_url: &str, location: &str)-> Result<String, Box<dyn Error>> {
+    debug!("\tThird call");
     let url = Url::parse(location)?;
 
     let query_params: Vec<_> = url

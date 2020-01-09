@@ -5,6 +5,8 @@ use std::error::Error;
 
 use reqwest::blocking::Client;
 
+use log::debug;
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Credentials {
@@ -35,7 +37,7 @@ pub struct Configuration {
 
 impl Configuration {
     pub fn get(env: &str, client: &Client) -> Result<Configuration, Box<dyn Error>>{
-        print!("Calling configuration api... ");
+        debug!("Begin Calling configuration api");
         let response = client
             .get(format!("{}/api/v1.0/nebo/configuration", common::ENV[env].neboapp_url).as_str())
             .send()?;
@@ -45,7 +47,7 @@ impl Configuration {
         if !status.is_success() {
             return Err(Box::from("error during call to configuration api"));
         }
-        println!("ok");
+        debug!("End Calling configuration ok");
         Ok(serde_json::from_str(&text)?)
     }
 }

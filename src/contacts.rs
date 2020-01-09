@@ -5,6 +5,7 @@ use super::common;
 use reqwest::StatusCode;
 
 use serde::Serialize;
+use log::info;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,7 +37,7 @@ impl<'a> ContactPayload<'a> {
 }
 
 pub fn add_contact(env: &str, token: &str, uuid: &str, email: &str, name: Option<&str>, message: Option<&str>) -> Result<(), Box<dyn Error>> {
-    print!("adding contact... ");
+    info!("Begin adding contact {} on page {}", email, uuid);
     let  payload = serde_json::to_string(&ContactPayload::new(email, name, message))?;
     let response = common::get_default_client(token)
         .post(format!("{}{}/{}/contacts", common::ENV[env].neboapp_url, common::NEBO_API_URI_PAGES, uuid).as_str())
@@ -46,7 +47,7 @@ pub fn add_contact(env: &str, token: &str, uuid: &str, email: &str, name: Option
     let status = response.status();
     let _dummy = response.text();
     if status.is_success() {
-        println!("ok");
+        info!("End adding contact {} on page {} OK", email, uuid);
     }
     else if status == StatusCode::NOT_FOUND {
         return Err(Box::from("page not found"));
@@ -64,7 +65,7 @@ pub fn remove_contact (
     uuid: &str,
     email: &str 
     ) -> Result<(), Box<dyn Error>> {
-    print!("deleting contact... ");
+    info!("Begin deleting contact {} on page {}", email, uuid);
     let response = common::get_default_client(token)
         .delete(format!("{}{}/{}/contacts/{}", common::ENV[env].neboapp_url, common::NEBO_API_URI_PAGES, uuid, email).as_str())
         .send()?;
@@ -72,7 +73,7 @@ pub fn remove_contact (
     let status = response.status();
     let _dummy = response.text();
     if status.is_success() {
-        println!("ok");
+        info!("End deleting contact {} on page {} OK", email, uuid);
     }
     else {
         return Err(Box::from(format!("error during call to api {}", _dummy?)));

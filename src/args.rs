@@ -11,6 +11,15 @@ pub fn env_arg<'a>() -> Arg<'a, 'a> {
         .env("NEBOCLI_ENV")
 }
 
+pub fn verbose_arg<'a>() -> Arg<'a, 'a> {
+    Arg::with_name("v")
+        .short("v")
+        .value_name("v")
+        .takes_value(false)
+        .required(false)
+        .multiple(true)
+}
+
 pub fn login_arg<'a>()-> Arg<'a, 'a> {
     Arg::with_name("login")
         .long("login")
