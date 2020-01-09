@@ -19,6 +19,8 @@ use std::error::Error;
 
 use std::str::FromStr;
 
+use log::debug;
+
 const LOCAL_TEST: &str = "LOCAL_TEST";
 const NO_KMS: &str = "NO_KMS_KEY";
 
@@ -29,10 +31,11 @@ pub fn upload_file(filename: &str,
     s3_config: S3Configuration,
     share_with_myscript: Option<&str>,
     collect_login: Option<&str>) -> Result<(), Box<dyn Error>>{
-    print!("uploading file to S3... ");
+    debug!("Begin Uploading file to S3");
     let local_region;
     
     if user_credentials.identity_pool_id == LOCAL_TEST {
+        debug!("Local test, do not use cognito");
         local_region = Region::Custom {
             name: s3_config.region,
             endpoint: s3_config.service_endpoint.ok_or("missing service endpoint for local test")?.into(),
@@ -59,7 +62,9 @@ pub fn upload_file(filename: &str,
     request.content_disposition = Some("attachment; filename=page.nebo; filename*=UTF-8''page.nebo".into());
     request.content_type = Some("application/vnd.myscript.nebo".into());
     request.key = format!("{}{}_{}.nebo", s3_config.client_directory_prefix, uuid, signature);
+    debug!("S3 file key is {}", request.key);
     if s3_config.kms_key != NO_KMS {
+        debug!("KMS activated");
         request.server_side_encryption = Some("aws:kms".into());
         request.ssekms_key_id = Some(s3_config.kms_key);
     }
@@ -76,12 +81,13 @@ pub fn upload_file(filename: &str,
         }
     }
 
-    println!("ok");
+    debug!("End Uploading file to S3 OK");
     Ok(())
 }
 
 fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: &str,  provider: &str, region: &str)-> Result<AwsCredentials, Box<dyn Error>> {
     if identity_pool_id != LOCAL_TEST {
+        debug!("Begin calling cognito for credentials");
         // It turns out that, event if the get_credentials_for_identity doesn't need credentials,
         // It doesn't work if there is really no credentials given. So let's give some "dummy" credentials
         let client = CognitoIdentityClient::new_with(
@@ -97,6 +103,7 @@ fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: &str
         let response = client.get_credentials_for_identity(input).sync()?;
 
         let credentials = response.credentials.ok_or("No credentials given by cognito identity")?;
+        debug!("End calling cognito for credentials ok");
         return Ok(AwsCredentials::new(
             credentials.access_key_id.ok_or("No access key id returned by cognito")?, 
             credentials.secret_key.ok_or("No secret key returned by cognito")?, 
