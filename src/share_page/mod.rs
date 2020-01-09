@@ -76,24 +76,13 @@ pub fn share_page(
     println!("sharing page {} on {}", &uuid, &env);
     call_share_api(env, &client, uuid, &signature, &title, &date)?;
     let configuration = Configuration::get(env, &client)?;
-    aws::get_cognito_credentials(
-        &configuration.credentials.access_token, 
-        &configuration.credentials.identity_id,
-        &configuration.credentials.identity_pool_id,
-        &configuration.credentials.identity_provider,
-        &configuration.credentials.region
-    )?;
-    
+
     aws::upload_file(
-        filename, 
-        &configuration.s3.bucket, 
-        &configuration.s3.client_directory_prefix, 
-        &configuration.credentials.identity_pool_id,
-        &configuration.s3.region, 
-        configuration.s3.service_endpoint.as_deref(),
+        filename,
         uuid, 
         &signature,
-        &configuration.s3.kms_key,
+        configuration.credentials,
+        configuration.s3,
         share_with_myscript,
         collect_login)?;
     Ok(())
