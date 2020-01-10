@@ -80,7 +80,7 @@ pub fn share_page(
         uuid, 
         &signature,
         configuration.credentials,
-        configuration.s3,
+        &configuration.s3,
         share_with_myscript,
         collect_login)?;
     info!("End share page {} OK", uuid);
