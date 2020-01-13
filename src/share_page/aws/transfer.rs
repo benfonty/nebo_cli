@@ -185,8 +185,7 @@ impl Drop for TransferManager {
 }
 
 struct FileChunkIterator<'a> {
-    file: &'a File,
-    buffer: Vec<u8>
+    file: &'a File
 }
 
 struct FileChunk {
@@ -197,8 +196,7 @@ struct FileChunk {
 impl<'a> FileChunkIterator<'a> {
     pub fn new(file: &'a File) -> Result<Self, Box<dyn Error>> {
         Ok(FileChunkIterator {
-            file: file,
-            buffer: vec![0; READ_BUFFER_SIZE]
+            file: file
         })
     }
 }
@@ -206,13 +204,12 @@ impl<'a> FileChunkIterator<'a> {
 impl<'a> Iterator for FileChunkIterator<'a> {
     type Item = FileChunk;
     fn next(&mut self) -> Option<FileChunk>{
-        
-        let size_read = self.file.read(&mut self.buffer).expect("Cannot read file");
+        let mut buffer = vec![0; READ_BUFFER_SIZE];
+        let size_read = self.file.read(&mut buffer).expect("Cannot read file");
         if size_read == 0 {
             return None;
         }
-        let mut buffer_to_use = self.buffer.clone();
-        buffer_to_use.truncate(size_read);
-        Some(FileChunk{size: size_read, chunk: buffer_to_use.into()})
+        buffer.truncate(size_read);
+        Some(FileChunk{size: size_read, chunk: buffer.into()})
     }
 }
