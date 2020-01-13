@@ -66,14 +66,16 @@ impl TransferManager {
 
     fn transfer_multipart(& mut self) -> Result<(), Box<dyn Error>> {
         debug!("init multipart upload for {}", self.key);
-        let mut create_request = CreateMultipartUploadRequest::default();
-        create_request.bucket = self.bucket.clone();
-        create_request.content_disposition = self.content_disposition.clone();
-        create_request.content_type = self.content_type.clone();
-        create_request.key = self.key.clone();
-        create_request.metadata = self.metadata.clone();
-        create_request.server_side_encryption = self.server_side_encryption.clone();
-        create_request.ssekms_key_id = self.ssekms_key_id.clone();
+        let create_request = CreateMultipartUploadRequest {
+            bucket: self.bucket.clone(),
+            content_disposition: self.content_disposition.clone(),
+            content_type: self.content_type.clone(),
+            key: self.key.clone(),
+            metadata: self.metadata.clone(),
+            server_side_encryption: self.server_side_encryption.clone(),
+            ssekms_key_id: self.ssekms_key_id.clone(),
+            ..Default::default()
+        };
         let creation_result = self.client.create_multipart_upload(create_request).sync()?;
         self.upload_id = creation_result.upload_id;
         debug!("end init multipart upload for {}", self.key);
@@ -85,14 +87,10 @@ impl TransferManager {
                 body: Some(chunk.chunk),
                 bucket: self.bucket.clone(),
                 content_length: Some(chunk.size as i64),
-                content_md5: None,
                 key: self.key.clone(),
                 part_number: part_number,
-                request_payer: None,
-                sse_customer_algorithm: None,
-                sse_customer_key: None,
-                sse_customer_key_md5: None,
-                upload_id: self.upload_id.clone().ok_or("missing upload id")?
+                upload_id: self.upload_id.clone().ok_or("missing upload id")?,
+                ..Default::default()
             })
             .sync()?;
             
@@ -106,8 +104,8 @@ impl TransferManager {
             bucket: self.bucket.clone(),
             key: self.key.clone(),
             multipart_upload: Some(completed_parts),
-            request_payer: None,
-            upload_id: self.upload_id.clone().unwrap()
+            upload_id: self.upload_id.clone().unwrap(),
+            ..Default::default()
         };
         self.client.complete_multipart_upload(request).sync()?;
         self.transfert_done = true;
@@ -117,14 +115,16 @@ impl TransferManager {
 
     fn transfer_monopart(& mut self) -> Result<(), Box<dyn Error>> {
         debug!("monopart upload for {}", self.key);
-        let mut request = PutObjectRequest::default();
-        request.bucket = self.bucket.clone();
-        request.content_disposition = self.content_disposition.clone();
-        request.content_type = self.content_type.clone();
-        request.key = self.key.clone();
-        request.server_side_encryption = self.server_side_encryption.clone();
-        request.ssekms_key_id = self.ssekms_key_id.clone();
-        request.metadata = self.metadata.clone();
+        let mut request = PutObjectRequest {
+            bucket: self.bucket.clone(),
+            content_disposition: self.content_disposition.clone(),
+            content_type: self.content_type.clone(),
+            key: self.key.clone(),
+            server_side_encryption: self.server_side_encryption.clone(),
+            ssekms_key_id: self.ssekms_key_id.clone(),
+            metadata: self.metadata.clone(),
+            ..Default::default()
+        };
         let mut content = Vec::new();
         self.file.read_to_end(&mut content)?;
         request.body = Some(content.into());
@@ -170,7 +170,7 @@ impl Drop for TransferManager {
                     bucket: self.bucket.clone(),
                     key: self.key.clone(),
                     upload_id: id.into(),
-                    request_payer: None
+                    ..Default::default()
                 };
                 if let Err(e) = self.client.abort_multipart_upload(request).sync() {
                     error!("unable to abort multipart upload for {}: {}", self.key, e);
