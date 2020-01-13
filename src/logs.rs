@@ -16,11 +16,10 @@ pub fn init(level: u64) -> Handle {
         _ => LevelFilter::Debug
     };
 
-    let pattern = if level >= 2 {
-        "{h({M} - {m}{n})}"
-    }
-    else {
-        "{m}{n}"
+    let pattern = match level {
+        2 => "{h({T}[{I}] - {m}{n})}",
+        3 => "{h({T}[{I}] - {M} - {m}{n})}",
+        _ => "{m}{n}"
     };
 
     let debug_level_all = if level == 3 {

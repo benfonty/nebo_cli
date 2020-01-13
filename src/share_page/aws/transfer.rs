@@ -4,6 +4,9 @@ use rusoto_s3::CreateMultipartUploadRequest;
 use rusoto_s3::CompleteMultipartUploadRequest;
 use rusoto_s3::CompletedMultipartUpload;
 use rusoto_s3::UploadPartRequest;
+use rusoto_s3::UploadPartError;
+use rusoto_core::RusotoError;
+use rusoto_s3::UploadPartOutput;
 use rusoto_s3::CompletedPart;
 use rusoto_core::ByteStream;
 use rusoto_s3::AbortMultipartUploadRequest;
@@ -20,6 +23,10 @@ use rusoto_s3::S3Client;
 
 use std::error::Error;
 
+use threadpool::ThreadPool;
+use std::sync::mpsc::channel;
+
+const NB_THREADS_MULTIPART: usize = 3;
 const READ_BUFFER_SIZE: usize = 5 * 1024 * 1024;
 const NO_KMS: &str = "NO_KMS_KEY";
 
@@ -34,8 +41,7 @@ pub struct TransferManager {
     ssekms_key_id: Option<String>,
     metadata: Option<HashMap<String, String>>,
     transfert_done: bool,
-    upload_id: Option<String>,
-    parts: Vec<(i64, String)>
+    upload_id: Option<String>
 }
 
 impl TransferManager {
@@ -52,8 +58,7 @@ impl TransferManager {
             ssekms_key_id: None,
             metadata: Some(generate_metadata(collect_login, signature, share_with_myscript)),
             transfert_done: false,
-            upload_id: None,
-            parts: vec!()
+            upload_id: None
         };
         debug!("S3 file key is {}", transfert_manager.key);
         if s3_config.kms_key != NO_KMS {
@@ -79,27 +84,56 @@ impl TransferManager {
         let creation_result = self.client.create_multipart_upload(create_request).sync()?;
         self.upload_id = creation_result.upload_id;
         debug!("end init multipart upload for {}", self.key);
-        
+        let pool = ThreadPool::with_name("multipart".into(), NB_THREADS_MULTIPART);
+        let (tx, rx) = channel::<Result<(UploadPartOutput, i64), RusotoError<UploadPartError>>>();
+        let mut nb_parts = 0;
         for (i, chunk) in FileChunkIterator::new(&self.file)?.enumerate() {
-            let part_number = i as i64 + 1;
-            debug!("send part {} of size {} for {}", part_number, chunk.size, self.key);
-            let part = self.client.upload_part(UploadPartRequest {
-                body: Some(chunk.chunk),
-                bucket: self.bucket.clone(),
-                content_length: Some(chunk.size as i64),
-                key: self.key.clone(),
-                part_number: part_number,
-                upload_id: self.upload_id.clone().ok_or("missing upload id")?,
-                ..Default::default()
-            })
-            .sync()?;
-            
-            self.parts.push((part_number, part.e_tag.ok_or("missing etag")?));
-            debug!("end send part {} of size {} for {}", i, chunk.size, self.key);
+            let (tx, part_number, chunk_size, upload_id, client, data, bucket, key) = (
+                tx.clone(),
+                i as i64 + 1,
+                chunk.size,
+                self.upload_id.clone().ok_or("missing upload id")?,
+                self.client.clone(),
+                ByteStream::from(chunk.chunk),
+                self.bucket.clone(),
+                self.key.clone()
+            );
+            pool.execute(move || {
+                let log = format!("send part {} of size {} for {}", part_number, chunk_size, key);
+                debug!("{}", log);
+                let part = client.upload_part(UploadPartRequest {
+                    body: Some(data),
+                    bucket: bucket,
+                    content_length: Some(chunk_size as i64),
+                    key: key,
+                    part_number: part_number,
+                    upload_id: upload_id,
+                    ..Default::default()
+                })
+                .sync();
+                debug!("end {}", log);
+                if part.is_err() {
+                    tx.send(Err(part.err().unwrap())).unwrap();
+                }
+                else {
+                    tx.send(Ok((part.ok().unwrap(), part_number))).unwrap();
+                }
+            });
+            nb_parts = part_number;
+        }
+
+        let results: Vec<Result<(UploadPartOutput, i64), RusotoError<UploadPartError>>> = rx.iter().take(nb_parts as usize).collect();
+        let mut parts = Vec::new();
+        for result in results {
+            match result {
+                Ok(value) => parts.push(CompletedPart{e_tag: value.0.e_tag.clone(), part_number: Some(value.1)}),
+                Err(e) => return Err(Box::new(e))
+            }
         }
 
         debug!("complete multipart upload for {}", self.key);
-        let completed_parts = CompletedMultipartUpload{ parts: Some(self.parts.iter().map(|x| CompletedPart{e_tag: Some(x.1.clone()), part_number: Some(x.0)}).collect())};
+        parts.sort_by(|a,b| a.part_number.unwrap().partial_cmp(&b.part_number.unwrap()).unwrap());
+        let completed_parts = CompletedMultipartUpload{ parts: Some(parts)};
         let request = CompleteMultipartUploadRequest{
             bucket: self.bucket.clone(),
             key: self.key.clone(),
@@ -190,7 +224,7 @@ struct FileChunkIterator<'a> {
 
 struct FileChunk {
     size: usize,
-    chunk: ByteStream
+    chunk: Vec<u8>
 }
 
 impl<'a> FileChunkIterator<'a> {
@@ -210,6 +244,6 @@ impl<'a> Iterator for FileChunkIterator<'a> {
             return None;
         }
         buffer.truncate(size_read);
-        Some(FileChunk{size: size_read, chunk: buffer.into()})
+        Some(FileChunk{size: size_read, chunk: buffer})
     }
 }
