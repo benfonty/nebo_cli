@@ -179,7 +179,7 @@ fn get_pages(env: &str, client: &Client, login: &str) -> Result<Pages, Box<dyn E
     let text = response.text()?;
     
     if !status.is_success() {
-        return Err(Box::from("error during call to get pages"));
+        return Err(Box::from(format!("error during call to get pages {}", text)));
     }
     info!("End Getting pages ok");
     Ok(serde_json::from_str(&text)?)
