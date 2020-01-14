@@ -28,13 +28,13 @@ lazy_static! {
         });
         m.insert("cloudtest",&Env  {
             sso_url: "https://sso.corp.myscript.com",
-            neboapp_url: "https://www.neboapp.corp.myscript.com",
+            neboapp_url: "https://neboapp.corp.myscript.com",
             client_id: "nebowebap_cloudtest",
             sso_redirect_uri: "https://neboapp.corp.myscript.com/callback"
         });
         m.insert("cloudtest2",&Env  {
             sso_url: "https://sso.corp.myscript.com",
-            neboapp_url: "https://www.neboapp2.corp.myscript.com",
+            neboapp_url: "https://neboapp2.corp.myscript.com",
             client_id: "nebowebap_cloudtest",
             sso_redirect_uri: "https://neboapp2.corp.myscript.com/callback"
         });
