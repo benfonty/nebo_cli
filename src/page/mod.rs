@@ -7,43 +7,54 @@ use std::error::Error;
 
 use std::borrow::Cow;
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use reqwest::blocking::Client;
+use reqwest::StatusCode;
 
 use super::common;
 use super::configuration::Configuration;
 mod aws;
 
-use log::{info, debug};
+use log::{info, debug, error};
 
-#[derive(Serialize)]
+use threadpool::ThreadPool;
+
+const NB_THREADS_DELETE: usize = 10;
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct PageMetadata<'a> {
-    page_title: &'a str,
-    page_id: &'a str,
-    last_modification_date: &'a str,
-    creation_date: &'a str
+struct PageMetadata {
+    page_title: String,
+    page_id: String,
+    last_modification_date: String,
+    creation_date: String
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct Page<'a> {
-    uuid: &'a str,
-    signature: &'a str,
-    metadata: PageMetadata<'a>
+struct Page {
+    uuid: String,
+    signature: String,
+    metadata: PageMetadata
 }
 
-impl<'a> Page<'a> {
-    fn new(uuid: &'a str, signature: &'a str, title: &'a str, date: &'a str) -> Page<'a> {
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Pages {
+    content: Vec<Page>
+}
+
+impl Page {
+    fn new(uuid: &str, signature: &str, title: &str, date: &str) -> Page {
         Page {
-            uuid: uuid,
-            signature: signature,
+            uuid: uuid.into(),
+            signature: signature.into(),
             metadata: PageMetadata {
-                page_title: title,
-                page_id: "toto",
-                last_modification_date: date,
-                creation_date: date
+                page_title: title.into(),
+                page_id: "toto".into(),
+                last_modification_date: date.into(),
+                creation_date: date.into()
             }
         }
     }
@@ -98,7 +109,7 @@ fn call_share_api(env: &str, client: &Client, uuid: &str, signature: &str, title
     let status = response.status();
     let _dummy = response.text();
     if !status.is_success() {
-        return Err(Box::from("error during call to share api"));
+        return Err(Box::from(format!("error during call to delete api {}", _dummy.unwrap())));
     }
     debug!("End Calling share api OK");
     Ok(())
@@ -123,8 +134,53 @@ pub fn delete_page(
         info!("End deleting page {} OK (was already deleted)", &uuid);
     }
     else {
-        return Err(Box::from("error during call to share api"));
+        return Err(Box::from(format!("error during call to delete api {} for {}", _dummy.unwrap(), uuid)));
     }
 
     Ok(())
+}
+
+pub fn delete_pages(
+    env: &str, 
+    token: &str, 
+    login: &str, 
+    ) -> Result<(), Box<dyn Error>> {
+    
+    let client = common::get_default_client(token);
+
+    let pages = get_pages(env, &client, login)?;
+    if pages.content.len() == 0 {
+        info!("no page to delete");
+    }
+    let pool = ThreadPool::with_name("delete".into(), NB_THREADS_DELETE);
+    for page in pages.content {
+        let (env, token, uuid) = (
+            String::from(env),
+            String::from(token),
+            page.uuid.clone()
+        );
+        pool.execute(move || {
+            if let Err(e) = delete_page(&env, &token, &uuid) {
+                error!("{}", e)
+            }
+        });
+    }
+    pool.join();
+    Ok(())
+}
+
+fn get_pages(env: &str, client: &Client, login: &str) -> Result<Pages, Box<dyn Error>> {
+    info!("Begin Getting pages for {}", login);
+    let response = client
+        .get(format!("{}{}", common::ENV[env].neboapp_url, common::NEBO_API_URI_PAGES).as_str())
+        .send()?;
+    
+    let status = response.status();
+    let text = response.text()?;
+    
+    if !status.is_success() {
+        return Err(Box::from("error during call to get pages"));
+    }
+    info!("End Getting pages ok");
+    Ok(serde_json::from_str(&text)?)
 }

@@ -42,6 +42,13 @@ fn main() -> Result<(), Box<dyn Error>>{
                 .arg(args::verbose_arg())
             )
         .subcommand(
+                App::new("deletePages")
+                    .about("delete all the pages of a user")
+                    .arg(args::env_arg())
+                    .arg(args::login_arg())
+                    .arg(args::verbose_arg())
+            )
+        .subcommand(
             App::new("addContact")
                 .about("add a contact")
                 .arg(args::uuid_arg())
@@ -94,6 +101,15 @@ fn main() -> Result<(), Box<dyn Error>>{
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),
                 unwrapped_args.value_of("uuid").unwrap(),
+            )?;
+            Ok(())
+        },
+        ("deletePages", args) => {
+            let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
+            nebo_cli::delete_pages(
+                unwrapped_args.value_of("env").unwrap(), 
+                unwrapped_args.value_of("login").unwrap()
             )?;
             Ok(())
         },
