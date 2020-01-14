@@ -121,7 +121,10 @@ impl TransferManager {
             });
             nb_parts = part_number;
         }
-
+        pool.join();
+        if pool.panic_count() > 0 {
+            return Err(Box::from("a multipart thread panicked"));
+        }
         let results: Vec<Result<(UploadPartOutput, i64), RusotoError<UploadPartError>>> = rx.iter().take(nb_parts as usize).collect();
         let mut parts = Vec::new();
         for result in results {
