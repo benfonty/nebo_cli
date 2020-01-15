@@ -21,6 +21,7 @@ use log::{info, debug, error};
 use threadpool::ThreadPool;
 
 const NB_THREADS_DELETE: usize = 10;
+pub const NB_THREADS_SHAREPAGES: usize = 10;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
