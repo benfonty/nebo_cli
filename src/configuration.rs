@@ -45,7 +45,7 @@ impl Configuration {
         let status = response.status();
         let text = response.text()?;
         if !status.is_success() {
-            return Err(Box::from("error during call to configuration api"));
+            return Err(Box::from(format!("error during call to configuration api {}", text)));
         }
         debug!("End Calling configuration ok");
         Ok(serde_json::from_str(&text)?)

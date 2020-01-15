@@ -117,3 +117,13 @@ pub fn message_arg<'a>()-> Arg<'a, 'a> {
         .required(false)
         .env("NEBOCLI_MESSAGE")
 }
+
+pub fn dir_arg<'a>()-> Arg<'a, 'a> {
+    Arg::with_name("dir")
+        .long("dir")
+        .value_name("dir")
+        .help("the dir")
+        .takes_value(true)
+        .required(true)
+        .env("NEBOCLI_DIR")
+}

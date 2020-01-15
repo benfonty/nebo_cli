@@ -4,6 +4,10 @@ use reqwest::blocking::Client;
 use reqwest::blocking::ClientBuilder;
 use reqwest::header::HeaderMap;
 
+use std::error::Error;
+
+use log::debug;
+
 pub struct Env {
     pub sso_url: &'static str,
     pub neboapp_url: &'static str,
@@ -54,3 +58,32 @@ pub fn get_default_client(token: &str) -> Client {
 }
 
 pub const NEBO_API_URI_PAGES: &str = "/api/v2.0/nebo/pages";
+
+pub fn scan_dir(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    debug!("Scanning directory {}", path);
+    let mut result = Vec::new();
+    for dir_entry in std::fs::read_dir(path)? {
+        if let Ok(dir) = dir_entry {
+            if let Some(s) = dir.path().to_str() {
+                let mut is_dir = false;
+                if let Ok(file_type) = dir.file_type() {
+                    if file_type.is_dir() {
+                        is_dir = true;
+                        if let Ok(mut content) = scan_dir(s) {
+                            result.append(&mut content);
+                        }
+                    }
+                }
+                if !is_dir {
+                    if let Ok(string) = dir.file_name().into_string() {
+                        if string.ends_with(".nebo") {
+                            result.push(s.into());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    debug!("{} nebo files in {}", result.len(), path);
+    return Ok(result);
+}
