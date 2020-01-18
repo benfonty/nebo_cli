@@ -12,9 +12,11 @@ use serde::{Serialize, Deserialize};
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
 
+use rusoto_core::credential::StaticProvider;
+
 use super::common;
 use super::configuration::Configuration;
-mod aws;
+pub mod aws;
 
 use log::{info, debug, error};
 
@@ -69,7 +71,9 @@ pub fn share_page(
     filename: &str, 
     title: Option<&str>, 
     share_with_myscript: Option<&str>,
-    collect_login: Option<&str>) -> Result<(), Box<dyn Error>> {
+    collect_login: Option<&str>,
+    credential_provider: StaticProvider,
+    configuration: &Configuration ) -> Result<(), Box<dyn Error>> {
     let now = Into::<DateTime<Utc>>::into(SystemTime::now());
     let signature = match signature {
         Some(s) => Cow::from(s),
@@ -85,14 +89,13 @@ pub fn share_page(
 
     info!("Begin share page {}", uuid);
     call_share_api(env, &client, uuid, &signature, &title, &date)?;
-    let configuration = Configuration::get(env, &client)?;
 
     aws::upload_file(
         filename,
         uuid, 
         &signature,
-        configuration.credentials,
-        &configuration.s3,
+        &configuration,
+        credential_provider,
         share_with_myscript,
         collect_login)?;
     info!("End share page {} OK", uuid);

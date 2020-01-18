@@ -7,8 +7,7 @@ use rusoto_core::Region;
 use rusoto_core::credential::StaticProvider;
 use rusoto_core::credential::AwsCredentials;
 
-use crate::configuration::Credentials;
-use crate::configuration::S3Configuration;
+use crate::configuration::Configuration;
 
 use std::error::Error;
 
@@ -25,45 +24,37 @@ const LOCAL_TEST: &str = "LOCAL_TEST";
 pub fn upload_file(filename: &str, 
     uuid: &str, 
     signature: &str,
-    user_credentials: Credentials,
-    s3_config: &S3Configuration,
+    configuration: &Configuration,
+    credential_provider: StaticProvider,
     share_with_myscript: Option<&str>,
     collect_login: Option<&str>) -> Result<(), Box<dyn Error>>{
     debug!("Begin Uploading file to S3");
     let local_region;
     
-    if user_credentials.identity_pool_id == LOCAL_TEST {
+    if configuration.credentials.identity_pool_id == LOCAL_TEST {
         debug!("Local test, do not use cognito");
         local_region = Region::Custom {
-            name: s3_config.region.clone(),
-            endpoint: s3_config.service_endpoint.clone().ok_or("missing service endpoint for local test")?.into(),
+            name: configuration.s3.region.clone(),
+            endpoint: configuration.s3.service_endpoint.clone().ok_or("missing service endpoint for local test")?.into(),
         };
     }
     else {
-        local_region = Region::from_str(&s3_config.region)?;
+        local_region = Region::from_str(&configuration.s3.region)?;
     }
     let client = S3Client::new_with(
         rusoto_core::request::HttpClient::new()?,
-        StaticProvider::from(
-            get_cognito_credentials(
-                &user_credentials.access_token, 
-                &user_credentials.identity_id,
-                &user_credentials.identity_pool_id,
-                &user_credentials.identity_provider,
-                &user_credentials.region
-            )?
-        ),
+        credential_provider,
         local_region
     );
 
-    let mut manager = transfer::TransferManager::init(client, filename, uuid, signature, &s3_config, share_with_myscript, collect_login)?;
+    let mut manager = transfer::TransferManager::init(client, filename, uuid, signature, &configuration.s3, share_with_myscript, collect_login)?;
     manager.transfer()?;
     
     debug!("End Uploading file to S3 OK");
     Ok(())
 }
 
-fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: &str,  provider: &str, region: &str)-> Result<AwsCredentials, Box<dyn Error>> {
+pub fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: &str,  provider: &str, region: &str)-> Result<AwsCredentials, Box<dyn Error>> {
     if identity_pool_id != LOCAL_TEST {
         debug!("Begin calling cognito for credentials");
         // It turns out that, event if the get_credentials_for_identity doesn't need credentials,
