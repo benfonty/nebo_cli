@@ -7,7 +7,7 @@ use reqwest::blocking::Client;
 
 use log::debug;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Credentials {
     pub access_token: String,
@@ -17,7 +17,7 @@ pub struct Credentials {
     pub identity_provider: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3Configuration {
     pub bucket: String,
@@ -27,7 +27,7 @@ pub struct S3Configuration {
     pub service_endpoint: Option<String>
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub sharing_url_prefix: String,

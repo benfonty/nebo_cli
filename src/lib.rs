@@ -12,6 +12,9 @@ mod configuration;
 mod contacts;
 
 use log::{info, error};
+use configuration::Configuration;
+
+use rusoto_core::credential::StaticProvider;
 
 use threadpool::ThreadPool;
 
@@ -21,7 +24,17 @@ pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
 
 pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, filename: &str, title: Option<&str>, share_with_myscript: Option<&str>, collect_login: Option<&str>) -> Result<(), Box<dyn Error>> {
     let token = token::token(env, login)?;
-    page::share_page(env, &token, uuid, signature, filename, title, share_with_myscript, collect_login)
+    let configuration = Configuration::get(env, &common::get_default_client(&token))?;
+    let provider = StaticProvider::from(
+        page::aws::get_cognito_credentials(
+            &configuration.credentials.access_token, 
+            &configuration.credentials.identity_id,
+            &configuration.credentials.identity_pool_id,
+            &configuration.credentials.identity_provider,
+            &configuration.credentials.region
+        )?
+    );
+    page::share_page(env, &token, uuid, signature, filename, title, share_with_myscript, collect_login, provider, &configuration)
 }
 
 pub fn share_pages(env: &str, login: &str, dir: &str) -> Result<(), Box<dyn Error>> {
@@ -29,15 +42,27 @@ pub fn share_pages(env: &str, login: &str, dir: &str) -> Result<(), Box<dyn Erro
     let files = common::scan_dir(dir)?;
     info!("Found {} files to share", files.len());
     let token = token::token(env, login)?;
+    let configuration = Configuration::get(env, &common::get_default_client(&token))?;
+    let provider = StaticProvider::from(
+        page::aws::get_cognito_credentials(
+            &configuration.credentials.access_token, 
+            &configuration.credentials.identity_id,
+            &configuration.credentials.identity_pool_id,
+            &configuration.credentials.identity_provider,
+            &configuration.credentials.region
+        )?
+    );
     let pool = ThreadPool::with_name("sharepages".into(), page::NB_THREADS_SHAREPAGES);
     for file in files {
-        let (env, token, uuid) = (
+        let (env, token, uuid, configuration, provider) = (
             env.to_owned(),
             token.clone(),
-            Path::new(&file).file_name().unwrap().to_str().unwrap().split('.').next().unwrap().to_owned()
+            Path::new(&file).file_name().unwrap().to_str().unwrap().split('.').next().unwrap().to_owned(),
+            configuration.clone(),
+            provider.clone()
     );
         pool.execute(move || {
-            if let Err(e) = page::share_page(&env, &token, &uuid, None, &file, None, None, None) {
+            if let Err(e) = page::share_page(&env, &token, &uuid, None, &file, None, None, None, provider, &configuration) {
                 error!("Sharing file {} KO ({})", file, e);
             }
         })
