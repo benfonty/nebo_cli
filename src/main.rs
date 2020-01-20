@@ -41,6 +41,14 @@ fn main() -> Result<(), Box<dyn Error>>{
                     .arg(args::dir_arg())
                     .arg(args::verbose_arg())
             ).subcommand(
+                App::new("shareWithMePages")
+                    .about("share private pages to contact from directory")
+                    .arg(args::env_arg())
+                    .arg(args::login_arg())
+                    .arg(args::dir_arg())
+                    .arg(args::verbose_arg())
+                    .arg(args::email_arg())
+            ).subcommand(
                 App::new("sharePage")
                     .about("share a page")
                     .arg(args::env_arg())
@@ -150,7 +158,19 @@ fn main() -> Result<(), Box<dyn Error>>{
             nebo_cli::share_pages(
                 unwrapped_args.value_of("env").unwrap(), 
                 unwrapped_args.value_of("login").unwrap(),
-                unwrapped_args.value_of("dir").unwrap()
+                unwrapped_args.value_of("dir").unwrap(),
+                None
+            )?;
+            Ok(())
+        },
+        ("shareWithMePages", args) => {
+            let unwrapped_args = args.unwrap();
+            logs::init(unwrapped_args.occurrences_of("v"));
+            nebo_cli::share_pages(
+                unwrapped_args.value_of("env").unwrap(), 
+                unwrapped_args.value_of("login").unwrap(),
+                unwrapped_args.value_of("dir").unwrap(),
+                unwrapped_args.value_of("email")
             )?;
             Ok(())
         },

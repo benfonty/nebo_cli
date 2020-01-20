@@ -51,7 +51,7 @@ pub fn share_page(
     Ok(())
 }
 
-pub fn share_pages(env: &str, login: &str, dir: &str) -> Result<(), Box<dyn Error>> {
+pub fn share_pages(env: &str, login: &str, dir: &str, email: Option<&str>) -> Result<(), Box<dyn Error>> {
     info!("Sharing pages of directory {}", dir);
     let files = common::scan_dir(dir)?;
     info!("Found {} files to share", files.len());
@@ -68,16 +68,30 @@ pub fn share_pages(env: &str, login: &str, dir: &str) -> Result<(), Box<dyn Erro
     );
     let pool = ThreadPool::with_name("sharepages".into(), page::NB_THREADS_SHAREPAGES);
     for file in files {
-        let (env, token, uuid, configuration, provider) = (
+        let (env, token, uuid, configuration, provider, email) = (
             env.to_owned(),
             token.clone(),
             Path::new(&file).file_name().unwrap().to_str().unwrap().split('.').next().unwrap().to_owned(),
             configuration.clone(),
-            provider.clone()
+            provider.clone(),
+            if let Some(v) = email {
+                Some(v.to_owned())
+            }
+            else  {
+                None
+            }
     );
         pool.execute(move || {
             if let Err(e) = page::share_page(&env, &token, &uuid, None, &file, None, None, None, provider, &configuration) {
                 error!("Sharing file {} KO ({})", file, e);
+            }
+            else if let Some(email) = email {
+                if let Err(e) = page::make_private(&env, &token, &uuid) {
+                    error!("{}", e);
+                }
+                else if let Err(e) = contacts::add_contact(&env, &token, &uuid, &email, None, None) {
+                    error!("{}", e);
+                }
             }
         })
     }
