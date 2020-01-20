@@ -48,6 +48,12 @@ struct Pages {
     content: Vec<Page>
 }
 
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct PageOption {
+     visibility: String
+}
+
 impl Page {
     fn new(uuid: &str, signature: &str, title: &str, date: &str) -> Page {
         Page {
@@ -61,6 +67,24 @@ impl Page {
             }
         }
     }
+}
+
+pub fn make_private(env: &str, token: &str, uuid: &str) -> Result<(), Box<dyn Error>> {
+    info!("Setting page {} private", uuid);
+    let client = common::get_default_client(token);
+    let serialized = serde_json::to_string(&PageOption{visibility: "PRIVATE".into()}).unwrap();
+    let response = client
+        .put(format!("{}{}/{}", common::ENV[env].neboapp_url, common::NEBO_API_URI_PAGES, uuid).as_str())
+        .body(serialized)
+        .send()?;
+    
+    let status = response.status();
+    let _dummy = response.text();
+    if !status.is_success() {
+        return Err(Box::from(format!("error during setting page private {}", _dummy.unwrap())));
+    }
+    info!("Setting page {} private OK", uuid);
+    Ok(())
 }
 
 pub fn share_page(

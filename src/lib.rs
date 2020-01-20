@@ -22,7 +22,16 @@ pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
     token::token(env, login)
 }
 
-pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, filename: &str, title: Option<&str>, share_with_myscript: Option<&str>, collect_login: Option<&str>) -> Result<(), Box<dyn Error>> {
+pub fn share_page(
+    env: &str, 
+    login: &str, 
+    uuid: &str, 
+    signature: Option<&str>, 
+    filename: &str, 
+    title: Option<&str>, 
+    share_with_myscript: Option<&str>, 
+    collect_login: Option<&str>,
+    email: Option<&str>) -> Result<(), Box<dyn Error>> {
     let token = token::token(env, login)?;
     let configuration = Configuration::get(env, &common::get_default_client(&token))?;
     let provider = StaticProvider::from(
@@ -34,7 +43,12 @@ pub fn share_page(env: &str, login: &str, uuid: &str, signature: Option<&str>, f
             &configuration.credentials.region
         )?
     );
-    page::share_page(env, &token, uuid, signature, filename, title, share_with_myscript, collect_login, provider, &configuration)
+    page::share_page(env, &token, uuid, signature, filename, title, share_with_myscript, collect_login, provider, &configuration)?;
+    if let Some(email) = email {
+        page::make_private(env, &token, uuid)?;
+        contacts::add_contact(env, &token, uuid, &email, None, None)?;
+    }
+    Ok(())
 }
 
 pub fn share_pages(env: &str, login: &str, dir: &str) -> Result<(), Box<dyn Error>> {
