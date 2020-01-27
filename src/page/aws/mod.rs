@@ -59,11 +59,7 @@ pub fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: 
         debug!("Begin calling cognito for credentials");
         // It turns out that, event if the get_credentials_for_identity doesn't need credentials,
         // It doesn't work if there is really no credentials given. So let's give some "dummy" credentials
-        let client = CognitoIdentityClient::new_with(
-            rusoto_core::request::HttpClient::new()?,
-            StaticProvider::from(AwsCredentials::default()),
-            Region::from_str(region)?
-        );
+        let client = CognitoIdentityClient::new(Region::from_str(region)?);
         let mut input = GetCredentialsForIdentityInput::default();
         input.identity_id = identity_id.into();
         let mut logins = HashMap::new();
