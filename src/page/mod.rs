@@ -12,7 +12,7 @@ use serde::{Serialize, Deserialize};
 use reqwest::blocking::Client;
 use reqwest::StatusCode;
 
-use rusoto_core::credential::StaticProvider;
+use rusoto_cognito_identity::CognitoProvider;
 
 use super::common;
 use super::configuration::Configuration;
@@ -96,7 +96,7 @@ pub fn share_page(
     title: Option<&str>, 
     share_with_myscript: Option<&str>,
     collect_login: Option<&str>,
-    credential_provider: StaticProvider,
+    credential_provider: CognitoProvider,
     configuration: &Configuration ) -> Result<(), Box<dyn Error>> {
     let now = Into::<DateTime<Utc>>::into(SystemTime::now());
     let signature = match signature {

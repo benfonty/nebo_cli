@@ -1,19 +1,13 @@
 use rusoto_s3::S3Client;
 
-use rusoto_cognito_identity::GetCredentialsForIdentityInput;
-use rusoto_cognito_identity::CognitoIdentityClient;
-use rusoto_cognito_identity::CognitoIdentity;
 use rusoto_core::Region;
-use rusoto_core::credential::StaticProvider;
-use rusoto_core::credential::AwsCredentials;
+use rusoto_cognito_identity::CognitoProvider;
 
 use crate::configuration::Configuration;
 
 use std::error::Error;
 
 use std::str::FromStr;
-
-use std::collections::HashMap;
 
 use log::debug;
 
@@ -25,7 +19,7 @@ pub fn upload_file(filename: &str,
     uuid: &str, 
     signature: &str,
     configuration: &Configuration,
-    credential_provider: StaticProvider,
+    credential_provider: CognitoProvider,
     share_with_myscript: Option<&str>,
     collect_login: Option<&str>) -> Result<(), Box<dyn Error>>{
     debug!("Begin Uploading file to S3");
@@ -52,27 +46,4 @@ pub fn upload_file(filename: &str,
     
     debug!("End Uploading file to S3 OK");
     Ok(())
-}
-
-pub fn get_cognito_credentials(token: &str, identity_id: &str,identity_pool_id: &str,  provider: &str, region: &str)-> Result<AwsCredentials, Box<dyn Error>> {
-    if identity_pool_id != LOCAL_TEST {
-        debug!("Begin calling cognito for credentials");
-        let client = CognitoIdentityClient::new(Region::from_str(region)?);
-        let mut input = GetCredentialsForIdentityInput::default();
-        input.identity_id = identity_id.into();
-        let mut logins = HashMap::new();
-        logins.insert(provider.into(), token.into());
-        input.logins = Some(logins);
-        let response = client.get_credentials_for_identity(input).sync()?;
-
-        let credentials = response.credentials.ok_or("No credentials given by cognito identity")?;
-        debug!("End calling cognito for credentials ok");
-        return Ok(AwsCredentials::new(
-            credentials.access_key_id.ok_or("No access key id returned by cognito")?, 
-            credentials.secret_key.ok_or("No secret key returned by cognito")?, 
-            credentials.session_token, 
-            None));
-    }
-
-    Ok(AwsCredentials::default())
 }

@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate futures;
 
 use std::error::Error;
 use std::path::Path;
@@ -14,9 +13,12 @@ mod contacts;
 use log::{info, error};
 use configuration::Configuration;
 
-use rusoto_core::credential::StaticProvider;
+use rusoto_cognito_identity::CognitoProvider;
 
 use threadpool::ThreadPool;
+use rusoto_core::Region;
+
+use std::str::FromStr;
 
 pub fn token(env: &str, login: &str) -> Result<String, Box<dyn Error>> {
     token::token(env, login)
@@ -34,15 +36,13 @@ pub fn share_page(
     email: Option<&str>) -> Result<(), Box<dyn Error>> {
     let token = token::token(env, login)?;
     let configuration = Configuration::get(env, &common::get_default_client(&token))?;
-    let provider = StaticProvider::from(
-        page::aws::get_cognito_credentials(
-            &configuration.credentials.access_token, 
-            &configuration.credentials.identity_id,
-            &configuration.credentials.identity_pool_id,
-            &configuration.credentials.identity_provider,
-            &configuration.credentials.region
-        )?
-    );
+
+    let provider = CognitoProvider::builder()
+        .identity_id(&configuration.credentials.identity_id)
+        .region(&Region::from_str(&configuration.credentials.region)?)
+        .login(&configuration.credentials.identity_provider, &configuration.credentials.access_token)
+        .build();
+
     page::share_page(env, &token, uuid, signature, filename, title, share_with_myscript, collect_login, provider, &configuration)?;
     if let Some(email) = email {
         page::make_private(env, &token, uuid)?;
@@ -57,15 +57,13 @@ pub fn share_pages(env: &str, login: &str, dir: &str, email: Option<&str>) -> Re
     info!("Found {} files to share", files.len());
     let token = token::token(env, login)?;
     let configuration = Configuration::get(env, &common::get_default_client(&token))?;
-    let provider = StaticProvider::from(
-        page::aws::get_cognito_credentials(
-            &configuration.credentials.access_token, 
-            &configuration.credentials.identity_id,
-            &configuration.credentials.identity_pool_id,
-            &configuration.credentials.identity_provider,
-            &configuration.credentials.region
-        )?
-    );
+
+    let provider = CognitoProvider::builder()
+        .identity_id(&configuration.credentials.identity_id)
+        .region(&Region::from_str(&configuration.credentials.region)?)
+        .login(&configuration.credentials.identity_provider, &configuration.credentials.access_token)
+        .build();
+
     let pool = ThreadPool::with_name("sharepages".into(), page::NB_THREADS_SHAREPAGES);
     for file in files {
         let (env, token, uuid, configuration, provider, email) = (
