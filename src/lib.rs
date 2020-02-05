@@ -38,9 +38,9 @@ pub fn share_page(
     let configuration = Configuration::get(env, &common::get_default_client(&token))?;
 
     let provider = CognitoProvider::builder()
-        .identity_id(&configuration.credentials.identity_id)
-        .region(&Region::from_str(&configuration.credentials.region)?)
-        .login(&configuration.credentials.identity_provider, &configuration.credentials.access_token)
+        .identity_id(configuration.credentials.identity_id.clone())
+        .region(Region::from_str(&configuration.credentials.region)?)
+        .login(configuration.credentials.identity_provider.clone(), configuration.credentials.access_token.clone())
         .build();
 
     page::share_page(env, &token, uuid, signature, filename, title, share_with_myscript, collect_login, provider, &configuration)?;
@@ -59,9 +59,9 @@ pub fn share_pages(env: &str, login: &str, dir: &str, email: Option<&str>) -> Re
     let configuration = Configuration::get(env, &common::get_default_client(&token))?;
 
     let provider = CognitoProvider::builder()
-        .identity_id(&configuration.credentials.identity_id)
-        .region(&Region::from_str(&configuration.credentials.region)?)
-        .login(&configuration.credentials.identity_provider, &configuration.credentials.access_token)
+        .identity_id(configuration.credentials.identity_id.clone())
+        .region(Region::from_str(&configuration.credentials.region)?)
+        .login(configuration.credentials.identity_provider.clone(), configuration.credentials.access_token.clone())
         .build();
 
     let pool = ThreadPool::with_name("sharepages".into(), page::NB_THREADS_SHAREPAGES);
